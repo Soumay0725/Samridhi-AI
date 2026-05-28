@@ -1,0 +1,15 @@
+{
+  "name": "samridhi-server",
+  "version": "1.0.0",
+  "description": "Samridhi AI — Angel One Proxy Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "otplib": "^12.0.1"
+  }
+}
