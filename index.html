@@ -1383,12 +1383,31 @@ async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:Abort
 // ── YAHOO FINANCE REAL PRICE FETCHER ──
 async function fetchYahoo(sym){
   try{
-    var ySym=sym+'.NS';
+    // Yahoo Finance symbol overrides — some NSE tickers differ on Yahoo
+    var YAHOO_SYM_MAP={
+      'TATAMOTORS':'TATAMOTORS.NS',
+      'LT':'LT.NS',
+      'HINDUNILVR':'HINDUNILVR.NS',
+      'BAJFINANCE':'BAJFINANCE.NS',
+      'ULTRACEMCO':'ULTRACEMCO.NS',
+      'BHARTIARTL':'BHARTIARTL.NS',
+      'KOTAKBANK':'KOTAKBANK.NS',
+      'ASIANPAINT':'ASIANPAINT.NS',
+      'AXISBANK':'AXISBANK.NS'
+    };
+    var ySym = YAHOO_SYM_MAP[sym] || (sym+'.NS');
     var url='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+ySym;
     var r=await fetch(url,{signal:AbortSignal.timeout(10000)});
     var d=await r.json();
     var res=d&&d.chart&&d.chart.result&&d.chart.result[0];
-    if(!res)return null;
+    // If NSE symbol fails, retry with BSE (.BO)
+    if(!res || !res.meta || !res.meta.regularMarketPrice){
+      var bUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+sym+'.BO';
+      var br=await fetch(bUrl,{signal:AbortSignal.timeout(10000)});
+      var bd2=await br.json();
+      res=bd2&&bd2.chart&&bd2.chart.result&&bd2.chart.result[0];
+      if(!res)return null;
+    }
     var meta=res.meta;
     var price=meta.regularMarketPrice||meta.previousClose;
     if(!price||price<=0)return null;
@@ -1469,7 +1488,7 @@ function enrich(d){
 }
 
 async function groq(prompt){
-  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-70b-8192',messages:[{role:'user',content:prompt}],max_tokens:320,temperature:0.2})});
+  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],max_tokens:320,temperature:0.2})});
   var d=await r.json();if(d.error)throw new Error(d.error.message);
   return d.choices[0].message.content;
 }
@@ -3613,7 +3632,7 @@ async function sendAIChat(){
   ctx+='Answer concisely in 2-3 sentences. Be helpful, educational, and use Indian market context (NSE/BSE, Rs., Indian sectors). If asked about a specific stock signal, refer to the data provided.';
   try{
     var msgs=[{role:'system',content:ctx}].concat(AIC_HISTORY.slice(-8));
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-70b-8192',messages:msgs,max_tokens:250,temperature:0.5})});
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:250,temperature:0.5})});
     var d=await r.json();
     var thinking=document.getElementById('aiThinking'); if(thinking) thinking.remove();
     if(d.error){ appendAIMsg('assistant','Sorry, I got an error: '+d.error.message); return; }
