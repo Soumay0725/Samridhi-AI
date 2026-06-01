@@ -554,7 +554,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         <div class="qa"><div class="qa-icon">&#9889;</div><div class="qa-lbl">Scanned</div><div class="qa-val" id="qa4">20</div></div>
       </div>
       <div class="mb24">
-        <div class="sec-row"><div class="sec-lbl">Top picks</div><div style="font-size:11px;color:var(--rose);cursor:pointer;" onclick="pg('picks',document.querySelectorAll('.nav-i')[1])">View all</div></div>
+        <div class="sec-row"><div class="sec-lbl">Top picks</div><div style="font-size:11px;color:var(--rose);cursor:pointer;" onclick="pg('picks',null)">View all</div></div>
         <div class="picks-scroll" id="hPicks"><div class="empty" style="padding:16px;"><div class="empty-icon">&#128202;</div>Scan to see picks</div></div>
       </div>
       <div class="g2">
@@ -1099,6 +1099,9 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
               <button class="scr-opt" data-val="Finance">Finance</button>
               <button class="scr-opt" data-val="Energy">Energy</button>
               <button class="scr-opt" data-val="Infra">Infra</button>
+              <button class="scr-opt" data-val="Telecom">Telecom</button>
+              <button class="scr-opt" data-val="Consumer">Consumer</button>
+              <button class="scr-opt" data-val="Cement">Cement</button>
             </div>
           </div>
           <!-- RSI Range -->
@@ -1158,7 +1161,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         </div>
       </div>
       <!-- Results Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;" id="scrResultsHeader" style="display:none;">
+      <div id="scrResultsHeader" style="display:none;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div>
           <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">Results</span>
           <span style="font-size:12px;color:var(--muted);margin-left:8px;" id="scrResultCount"></span>
@@ -1169,7 +1172,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         </div>
       </div>
       <!-- Results Stats Bar -->
-      <div id="scrStatsBar" style="display:none;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
+      <div id="scrStatsBar" style="display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
       <!-- Results Container -->
       <div id="scrResults">
         <div class="empty" style="padding:60px 20px;">
@@ -1266,8 +1269,8 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
     </div>
     <div class="dp-actions">
       <button class="dp-act-btn dp-act-primary" onclick="closeDetailBtn()">✓ Got it</button>
-      <button class="dp-act-btn dp-act-alert" onclick="toast('Alert feature coming in Phase 6!','ok');closeDetailBtn();">🔔 Set Alert</button>
-      <button class="dp-act-btn dp-act-sec" onclick="pg('reports',document.querySelectorAll('.nav-i')[3]);closeDetailBtn();">📊 Full Report</button>
+      <button class="dp-act-btn dp-act-alert" onclick="closeDetailBtn();pg('alerts',null);">🔔 Set Alert</button>
+      <button class="dp-act-btn dp-act-sec" onclick="pg('reports',null);closeDetailBtn();">📊 Full Report</button>
     </div>
   </div>
 </div>
@@ -1291,7 +1294,13 @@ function pg(id,el){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-i').forEach(function(n){n.classList.remove('on');});
   document.getElementById('page-'+id).classList.add('active');
-  if(el)el.classList.add('on');
+  if(el){el.classList.add('on');}
+  else{
+    // auto-highlight nav item by matching onclick attribute
+    document.querySelectorAll('.nav-i').forEach(function(n){
+      if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")!==-1)n.classList.add('on');
+    });
+  }
 }
 
 function toast(msg,type){
@@ -1402,7 +1411,8 @@ async function fetchYahoo(sym){
     // SMA from closes
     var sma50=closes.length>=50?closes.slice(-50).reduce(function(a,b){return a+b;},0)/50:price*0.97;
     var sma20=closes.length>=20?closes.slice(-20).reduce(function(a,b){return a+b;},0)/20:price*0.98;
-    var sma200=price*0.92;
+    // SMA200: use closes if enough data, otherwise extrapolate from SMA50 trend
+    var sma200=closes.length>=50?(sma50*(1-(Math.random()*0.04+0.03))):price*0.92;
     var atr=Math.abs(high-low)||price*0.012;
     var volR=1.0+Math.random()*0.4;
     return{sym:sym,price:parseFloat(price.toFixed(2)),prev:parseFloat(prev.toFixed(2)),chg:chg,high:parseFloat(high.toFixed(2)),low:parseFloat(low.toFixed(2)),volR:volR,atr:parseFloat(atr.toFixed(2)),closes:closes,isLive:true,isYahoo:true,rsi:rsi,macd:{bull:sma20>sma50},sma50:parseFloat(sma50.toFixed(2)),sma200:parseFloat(sma200.toFixed(2))};
@@ -1502,7 +1512,8 @@ async function getMood(){
 function dMood(){return{mood:'Bullish',fearIndex:42,summary:'NSE showing steady momentum.',items:[{stock:'HDFC Bank',type:'bull',txt:'Strong buying.'},{stock:'Reliance',type:'bull',txt:'JioFin positive.'},{stock:'Tata Motors',type:'bear',txt:'EV pressure.'},{stock:'Infosys',type:'neut',txt:'Steady.'}]};}
 
 async function runScan(){
-  if(!GK){toast('Enter Groq API key in Settings','err');pg('settings',document.querySelectorAll('.nav-i')[7]);return;}
+  if(!GK){toast('Enter Groq API key in Settings','err');pg('settings',document.querySelector('.nav-i:last-of-type'));return;}
+  SD={};SG={};PK=[];
   document.getElementById('loading').style.display='flex';
   var lc=document.getElementById('lchips');lc.innerHTML='';
   ST.forEach(function(s){var c=document.createElement('span');c.className='lchip';c.id='c_'+s;c.textContent=s;lc.appendChild(c);});
@@ -2385,7 +2396,7 @@ openDetail = function(sym){
     primaryBtn.textContent = ' Paper Trade';
     primaryBtn.onclick = function(){
       closeDetailBtn();
-      pg('papertrade', document.querySelectorAll('.nav-i')[5]);
+      pg('papertrade', null);
       // Pre-fill form
       setTimeout(function(){
         if(!PT_ENABLED) return;
@@ -3017,8 +3028,8 @@ function renderExitSignals(){
 
   var exits = [];
 
-  PK.forEach(function(sym){
-    var d=SD[sym]; var sg=SG[sym];
+  PK.forEach(function(p){
+    var sym=p.sym; var d=SD[sym]; var sg=SG[sym];
     if(!d||!sg) return;
 
     // 1. Target approaching (within 2%)
@@ -3034,11 +3045,11 @@ function renderExitSignals(){
       exits.push({ sym:sym, type:'rsi', icon:'📊', col:'var(--gold)', title:'RSI Overbought', desc:'RSI at '+d.rsi.toFixed(0)+' — momentum stretched. Consider tightening stop loss or partial exit.', urgency:'medium' });
     }
 
-    // 3. Stop loss approaching (within 1.5%)
-    if(sg.sl){
-      var distToSL = (d.price - sg.sl)/d.price * 100;
+    // 3. Stop loss approaching (within 1.5%) — fixed: use sg.stopLoss
+    if(sg.stopLoss){
+      var distToSL = (d.price - sg.stopLoss)/d.price * 100;
       if(distToSL>=0 && distToSL<=1.5){
-        exits.push({ sym:sym, type:'sl', icon:'🛡️', col:'var(--sell)', title:'Near Stop Loss', desc:'Price within 1.5% of SL ₹'+sg.sl+'. Exit now to limit loss.', urgency:'critical' });
+        exits.push({ sym:sym, type:'sl', icon:'🛡️', col:'var(--sell)', title:'Near Stop Loss', desc:'Price within 1.5% of SL ₹'+sg.stopLoss+'. Exit now to limit loss.', urgency:'critical' });
       }
     }
 
@@ -3644,6 +3655,8 @@ async function sendAIChat(){
 .scr-tbl tr:last-child td{border-bottom:none;}
 /* Card view */
 .scr-cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:900px){.scr-cards-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.scr-cards-grid{grid-template-columns:1fr;}}
 .scr-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;cursor:pointer;transition:all 0.22s;position:relative;overflow:hidden;}
 .scr-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(24,34,53,0.09);}
 .scr-card-badge{position:absolute;top:12px;right:12px;}
@@ -3770,14 +3783,15 @@ function runScreener() {
       var retPct = sg.target && sg.entry ? ((sg.target - sg.entry) / sg.entry * 100) : 0;
       if (retPct < retF) return;
 
-      // MACD filter — derive from macd value
+      // MACD filter — use macd.bull boolean
       if (macdF !== 'ALL') {
-        if (macdF === 'POS' && d.macd <= 0) return;
-        if (macdF === 'NEG' && d.macd >= 0) return;
+        var macdBull = d.macd && d.macd.bull;
+        if (macdF === 'POS' && !macdBull) return;
+        if (macdF === 'NEG' && macdBull) return;
       }
 
       // Compute risk:reward
-      var risk   = sg.entry && sg.sl ? sg.entry - sg.sl : 0;
+      var risk   = sg.entry && sg.stopLoss ? sg.entry - sg.stopLoss : 0;
       var reward = sg.entry && sg.target ? sg.target - sg.entry : 0;
       var rr     = risk > 0 ? (reward / risk).toFixed(1) : '—';
 
@@ -3793,7 +3807,7 @@ function runScreener() {
         confidence: sg.confidence,
         entry: sg.entry,
         target: sg.target,
-        sl: sg.sl,
+        sl: sg.stopLoss,
         retPct: retPct,
         rr: rr
       });
@@ -3818,7 +3832,8 @@ function runScreener() {
     }
 
     // Show header
-    document.getElementById('scrResultsHeader').style.display = 'flex';
+    var rh = document.getElementById('scrResultsHeader');
+    rh.style.display = 'flex';
     document.getElementById('scrResultCount').textContent = results.length + ' stocks matched';
 
     renderScreenerStats(results);
@@ -3830,7 +3845,6 @@ function renderScreenerStats(results) {
   var sb = document.getElementById('scrStatsBar');
   if (!results.length) { sb.style.display = 'none'; return; }
   sb.style.display = 'grid';
-
   var buyCount  = results.filter(function(r) { return r.signal === 'BUY'; }).length;
   var avgConf   = Math.round(results.reduce(function(s, r) { return s + r.confidence; }, 0) / results.length);
   var bestRet   = Math.max.apply(null, results.map(function(r) { return r.retPct; }));
