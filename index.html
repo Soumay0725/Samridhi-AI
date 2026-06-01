@@ -1257,7 +1257,7 @@ async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:Abort
 async function fetchYahoo(sym){
   try{
     var ySym=sym+'.NS';
-    var url='https://query1.finance.yahoo.com/v8/finance/chart/'+ySym+'?interval=1d&range=3mo';
+    var url='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+ySym;
     var r=await fetch(url,{signal:AbortSignal.timeout(10000)});
     var d=await r.json();
     var res=d&&d.chart&&d.chart.result&&d.chart.result[0];
@@ -1294,8 +1294,8 @@ async function fetchYahoo(sym){
 // ── YAHOO FINANCE INDICES FETCHER ──
 async function fetchYahooIndices(){
   try{
-    var niftyUrl='https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1d&range=5d';
-    var sensexUrl='https://query1.finance.yahoo.com/v8/finance/chart/%5EBSESN?interval=1d&range=5d';
+    var niftyUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol=%5ENSEI';
+    var sensexUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol=%5EBSESN';
     var [nr,sr]=await Promise.all([
       fetch(niftyUrl,{signal:AbortSignal.timeout(8000)}).then(function(r){return r.json();}),
       fetch(sensexUrl,{signal:AbortSignal.timeout(8000)}).then(function(r){return r.json();})
