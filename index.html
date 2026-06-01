@@ -503,6 +503,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
     <div class="nav-i" onclick="pg('journal',this)"><span class="nav-ic">&#128221;</span>Trade Journal</div>
     <div class="nav-i" onclick="pg('analytics',this)"><span class="nav-ic">&#128200;</span>Analytics</div>
     <div class="nav-i" onclick="pg('screener',this)"><span class="nav-ic">&#128270;</span>Screener<span class="nav-badge" id="screenerBadge" style="display:none;"></span></div>
+    <div class="nav-i" onclick="pg('backtest',this)"><span class="nav-ic">&#128202;</span>Backtest<span class="nav-badge" id="btNavBadge" style="display:none;"></span></div>
     <div class="nav-sep"></div>
     <div class="nav-i" onclick="pg('settings',this)"><span class="nav-ic">&#9881;</span>Settings</div>
     <div class="sb-bot">
@@ -1180,6 +1181,142 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
           <div style="margin-bottom:8px;">Configure your filters and click Run Screener</div>
           <div style="font-size:11px;">First run a market scan to populate data</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ PHASE 9: BACKTESTING ENGINE ══ -->
+    <div class="page" id="page-backtest">
+      <div style="margin-bottom:18px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:3px;">Backtesting Engine</div>
+        <div style="font-size:12px;color:var(--muted);">Simulate how Samridhi's signals would have performed on historical price data</div>
+      </div>
+
+      <!-- Config Panel -->
+      <div class="scard bt-config-card" style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          <span>⚙️</span> Backtest Configuration
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="scr-fblock">
+            <div class="scr-flbl">Period</div>
+            <div class="scr-options" id="btPeriod">
+              <button class="scr-opt" data-val="7">7 Days</button>
+              <button class="scr-opt on" data-val="14">14 Days</button>
+              <button class="scr-opt" data-val="30">30 Days</button>
+            </div>
+          </div>
+          <div class="scr-fblock">
+            <div class="scr-flbl">Signal Type</div>
+            <div class="scr-options" id="btSigType">
+              <button class="scr-opt on" data-val="ALL">All</button>
+              <button class="scr-opt" data-val="BUY">BUY only</button>
+              <button class="scr-opt" data-val="SELL">SELL only</button>
+            </div>
+          </div>
+          <div class="scr-fblock">
+            <div class="scr-flbl">Min Confidence</div>
+            <div class="scr-options" id="btMinConf">
+              <button class="scr-opt on" data-val="0">Any</button>
+              <button class="scr-opt" data-val="60">60%+</button>
+              <button class="scr-opt" data-val="70">70%+</button>
+              <button class="scr-opt" data-val="80">80%+</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="scr-fblock">
+            <div class="scr-flbl">Capital Per Trade</div>
+            <div class="scr-options" id="btCapital">
+              <button class="scr-opt" data-val="5000">₹5,000</button>
+              <button class="scr-opt on" data-val="10000">₹10,000</button>
+              <button class="scr-opt" data-val="25000">₹25,000</button>
+              <button class="scr-opt" data-val="50000">₹50,000</button>
+            </div>
+          </div>
+          <div class="scr-fblock">
+            <div class="scr-flbl">Exit Strategy</div>
+            <div class="scr-options" id="btExit">
+              <button class="scr-opt on" data-val="tgsl">Target or SL hit</button>
+              <button class="scr-opt" data-val="eod">End of period</button>
+            </div>
+          </div>
+          <div class="scr-fblock">
+            <div class="scr-flbl">Stocks</div>
+            <div class="scr-options" id="btStocks">
+              <button class="scr-opt on" data-val="ALL">All 20</button>
+              <button class="scr-opt" data-val="TOP10">Top 10 by conf</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn-scan" onclick="runBacktest()" id="btRunBtn" style="flex:1;">▶ Run Backtest</button>
+          <button class="btn-s" onclick="resetBacktest()">Reset</button>
+          <span style="font-size:11px;color:var(--muted);">Requires scan data · Uses historical closes</span>
+        </div>
+      </div>
+
+      <!-- Results hidden until run -->
+      <div id="btResultsWrap" style="display:none;">
+        <!-- KPI Row -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;" id="btKpiRow"></div>
+        <!-- Equity Curve -->
+        <div class="scard" style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">Equity Curve</div>
+            <div style="font-size:10px;color:var(--muted);" id="btCurveMeta"></div>
+          </div>
+          <canvas id="btEquityCanvas" height="120" style="width:100%;display:block;"></canvas>
+        </div>
+        <!-- Trades Table -->
+        <div class="scard" style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">Trade Log</div>
+            <div style="display:flex;gap:6px;" id="btTradeFilter">
+              <button class="scr-opt on" data-val="ALL" onclick="btFilterTrades('ALL',this)">All</button>
+              <button class="scr-opt" data-val="WIN" onclick="btFilterTrades('WIN',this)">✅ Wins</button>
+              <button class="scr-opt" data-val="LOSS" onclick="btFilterTrades('LOSS',this)">❌ Losses</button>
+              <button class="scr-opt" data-val="OPEN" onclick="btFilterTrades('OPEN',this)">⏳ Open</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="scr-tbl" id="btTradeTable">
+              <thead><tr>
+                <th>Stock</th><th>Signal</th><th>Entry</th><th>Target</th><th>Stop Loss</th>
+                <th>Exit Price</th><th>P&L</th><th>Return</th><th>Result</th><th>Conf</th>
+              </tr></thead>
+              <tbody id="btTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Bottom 2-col: Win by sector + Signal accuracy -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div class="scard">
+            <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:12px;">🏭 Win Rate by Sector</div>
+            <div id="btSectorWR"></div>
+          </div>
+          <div class="scard">
+            <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:12px;">🎯 Signal Accuracy</div>
+            <div id="btSigAccuracy"></div>
+          </div>
+        </div>
+        <!-- Best & Worst -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="scard">
+            <div style="font-size:12px;font-weight:600;color:var(--emerald);margin-bottom:10px;">🏆 Best Trades</div>
+            <div id="btBestTrades"></div>
+          </div>
+          <div class="scard">
+            <div style="font-size:12px;font-weight:600;color:var(--sell);margin-bottom:10px;">💀 Worst Trades</div>
+            <div id="btWorstTrades"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="btEmpty" class="empty" style="padding:60px 20px;">
+        <div class="empty-icon">📊</div>
+        <div style="margin-bottom:8px;">Configure and run the backtest above</div>
+        <div style="font-size:11px;">First run a market scan, then click Run Backtest</div>
       </div>
     </div>
 
@@ -3966,3 +4103,387 @@ pg = function(name, el) {
   if (name === 'screener' && SCR_RESULTS.length) renderScreenerResults(SCR_RESULTS);
 };
 </script>
+
+<!-- ══ PHASE 9: BACKTEST STYLES ══ -->
+<style>
+.bt-config-card{}
+.bt-kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+.bt-kpi-icon{font-size:20px;margin-bottom:5px;}
+.bt-kpi-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-family:'Inter',sans-serif;margin-bottom:4px;}
+.bt-kpi-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;}
+.bt-kpi-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.bt-result-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.bt-result-row:last-child{border-bottom:none;}
+</style>
+
+<!-- ══ PHASE 9: BACKTEST SCRIPT ══ -->
+<script>
+// ══════════════════════════════════════════
+//  PHASE 9: BACKTESTING ENGINE
+// ══════════════════════════════════════════
+
+var BT_TRADES = [];
+var BT_ALL_TRADES = [];
+
+// Wire single-select for backtest options
+document.querySelectorAll('#btPeriod .scr-opt, #btSigType .scr-opt, #btMinConf .scr-opt, #btCapital .scr-opt, #btExit .scr-opt, #btStocks .scr-opt').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var group = btn.parentElement;
+    group.querySelectorAll('.scr-opt').forEach(function(b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+  });
+});
+
+function btGetVal(id) {
+  var on = document.querySelector('#' + id + ' .scr-opt.on');
+  return on ? on.dataset.val : null;
+}
+
+function resetBacktest() {
+  BT_TRADES = []; BT_ALL_TRADES = [];
+  document.getElementById('btResultsWrap').style.display = 'none';
+  document.getElementById('btEmpty').style.display = 'block';
+  var badge = document.getElementById('btNavBadge');
+  if (badge) badge.style.display = 'none';
+}
+
+// ── Core backtest simulation ──
+// Uses historical closes array (30 days) already in SD[sym].closes
+// Simulates entry on day 0, exit when target or SL is hit, or at period end
+function simulateTrade(sym, sig, closes, period, exitMode, capital) {
+  if (!closes || closes.length < 2) return null;
+  var entry = sig.entry;
+  var target = sig.target;
+  var sl = sig.stopLoss;
+  if (!entry || !target || !sl) return null;
+
+  var isBuy = sig.signal === 'BUY';
+  var isSell = sig.signal === 'SELL';
+
+  // Use last `period` closes as the simulation window
+  var window = closes.slice(-Math.min(period, closes.length));
+  if (window.length < 2) return null;
+
+  var entryPrice = window[0];
+  var exitPrice = window[window.length - 1];
+  var exitDay = window.length - 1;
+  var result = 'OPEN';
+
+  if (exitMode === 'tgsl') {
+    for (var i = 1; i < window.length; i++) {
+      var price = window[i];
+      if (isBuy) {
+        if (price >= target) { exitPrice = target; exitDay = i; result = 'WIN'; break; }
+        if (price <= sl)     { exitPrice = sl;     exitDay = i; result = 'LOSS'; break; }
+      } else if (isSell) {
+        if (price <= target) { exitPrice = target; exitDay = i; result = 'WIN'; break; }
+        if (price >= sl)     { exitPrice = sl;     exitDay = i; result = 'LOSS'; break; }
+      }
+    }
+    if (result === 'OPEN') {
+      // Mark-to-market at last close
+      exitPrice = window[window.length - 1];
+      if (isBuy)  result = exitPrice >= entryPrice ? 'WIN' : 'LOSS';
+      if (isSell) result = exitPrice <= entryPrice ? 'WIN' : 'LOSS';
+    }
+  } else {
+    // End of period exit
+    exitPrice = window[window.length - 1];
+    if (isBuy)  result = exitPrice >= entryPrice ? 'WIN' : 'LOSS';
+    if (isSell) result = exitPrice <= entryPrice ? 'WIN' : 'LOSS';
+  }
+
+  var qty = Math.floor(capital / entryPrice) || 1;
+  var pnl = isBuy ? (exitPrice - entryPrice) * qty : (entryPrice - exitPrice) * qty;
+  var retPct = isBuy
+    ? ((exitPrice - entryPrice) / entryPrice * 100)
+    : ((entryPrice - exitPrice) / entryPrice * 100);
+
+  return {
+    sym: sym,
+    name: NM[sym] || sym,
+    sector: SEC[sym] || '—',
+    signal: sig.signal,
+    confidence: sig.confidence,
+    entry: entryPrice,
+    target: target,
+    sl: sl,
+    exitPrice: parseFloat(exitPrice.toFixed(2)),
+    exitDay: exitDay,
+    qty: qty,
+    pnl: parseFloat(pnl.toFixed(2)),
+    retPct: parseFloat(retPct.toFixed(2)),
+    result: result,
+    capital: capital
+  };
+}
+
+async function runBacktest() {
+  if (!Object.keys(SD).length || !Object.keys(SG).length) {
+    toast('Run a market scan first to populate data', 'err');
+    return;
+  }
+
+  var btn = document.getElementById('btRunBtn');
+  btn.textContent = '⏳ Running...';
+  btn.disabled = true;
+
+  setTimeout(function() {
+    btn.textContent = '▶ Run Backtest';
+    btn.disabled = false;
+
+    var period   = parseInt(btGetVal('btPeriod')) || 14;
+    var sigType  = btGetVal('btSigType') || 'ALL';
+    var minConf  = parseInt(btGetVal('btMinConf')) || 0;
+    var capital  = parseInt(btGetVal('btCapital')) || 10000;
+    var exitMode = btGetVal('btExit') || 'tgsl';
+    var stocks   = btGetVal('btStocks') || 'ALL';
+
+    // Pick stocks to backtest
+    var symbols = ST.slice();
+    if (stocks === 'TOP10') {
+      symbols = Object.keys(SG)
+        .filter(function(s) { return SG[s]; })
+        .sort(function(a, b) { return (SG[b].confidence || 0) - (SG[a].confidence || 0); })
+        .slice(0, 10);
+    }
+
+    var trades = [];
+    symbols.forEach(function(sym) {
+      var d  = SD[sym];
+      var sg = SG[sym];
+      if (!d || !sg) return;
+      if (sigType !== 'ALL' && sg.signal !== sigType) return;
+      if (sg.confidence < minConf) return;
+
+      var trade = simulateTrade(sym, sg, d.closes, period, exitMode, capital);
+      if (trade) trades.push(trade);
+    });
+
+    BT_ALL_TRADES = trades;
+    BT_TRADES = trades;
+
+    if (!trades.length) {
+      toast('No trades to backtest with current filters', 'err');
+      return;
+    }
+
+    // Update badge
+    var wins = trades.filter(function(t) { return t.result === 'WIN'; }).length;
+    var badge = document.getElementById('btNavBadge');
+    if (badge) {
+      badge.textContent = wins + 'W';
+      badge.style.display = 'inline';
+    }
+
+    document.getElementById('btEmpty').style.display = 'none';
+    document.getElementById('btResultsWrap').style.display = 'block';
+    document.getElementById('btCurveMeta').textContent = period + '-day simulation · ' + trades.length + ' trades';
+
+    renderBtKPIs(trades, capital);
+    renderBtEquity(trades, capital);
+    renderBtTable(trades);
+    renderBtSectorWR(trades);
+    renderBtSigAccuracy(trades);
+    renderBtBestWorst(trades);
+
+    toast('Backtest complete — ' + trades.length + ' trades simulated', 'ok');
+  }, 400);
+}
+
+function renderBtKPIs(trades, capital) {
+  var wins   = trades.filter(function(t) { return t.result === 'WIN'; });
+  var losses = trades.filter(function(t) { return t.result === 'LOSS'; });
+  var totalPnl = trades.reduce(function(s, t) { return s + t.pnl; }, 0);
+  var winRate  = trades.length ? Math.round(wins.length / trades.length * 100) : 0;
+  var grossWin = wins.reduce(function(s, t) { return s + t.pnl; }, 0);
+  var grossLoss = Math.abs(losses.reduce(function(s, t) { return s + t.pnl; }, 0));
+  var pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : '∞';
+  var avgWin  = wins.length   ? (grossWin / wins.length).toFixed(0)     : '0';
+  var avgLoss = losses.length ? (grossLoss / losses.length).toFixed(0)  : '0';
+  var totalCapital = capital * trades.length;
+  var totalRetPct  = totalCapital > 0 ? (totalPnl / totalCapital * 100).toFixed(1) : '0';
+
+  var kpis = [
+    { icon:'🎯', lbl:'Win Rate',      val: winRate + '%',       sub: wins.length + 'W / ' + losses.length + 'L',    col: winRate >= 50 ? 'var(--emerald)' : 'var(--sell)' },
+    { icon:'💰', lbl:'Total P&L',     val: (totalPnl >= 0 ? '+' : '') + '₹' + Math.round(totalPnl).toLocaleString('en-IN'), sub: totalRetPct + '% on capital', col: totalPnl >= 0 ? 'var(--emerald)' : 'var(--sell)' },
+    { icon:'⚡', lbl:'Profit Factor', val: pf,                  sub: 'Gross win / loss',      col: parseFloat(pf) >= 1.5 ? 'var(--emerald)' : parseFloat(pf) >= 1 ? '#B8922A' : 'var(--sell)' },
+    { icon:'📈', lbl:'Avg Win',       val: '₹' + parseInt(avgWin).toLocaleString('en-IN'),   sub: 'per winning trade',     col: 'var(--emerald)' },
+    { icon:'📉', lbl:'Avg Loss',      val: '₹' + parseInt(avgLoss).toLocaleString('en-IN'),  sub: 'per losing trade',      col: 'var(--sell)' },
+  ];
+
+  document.getElementById('btKpiRow').innerHTML = kpis.map(function(k) {
+    return '<div class="bt-kpi">'
+      + '<div class="bt-kpi-icon">' + k.icon + '</div>'
+      + '<div class="bt-kpi-lbl">' + k.lbl + '</div>'
+      + '<div class="bt-kpi-val" style="color:' + k.col + ';">' + k.val + '</div>'
+      + '<div class="bt-kpi-sub">' + k.sub + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderBtEquity(trades, capital) {
+  var canvas = document.getElementById('btEquityCanvas');
+  var w = canvas.offsetWidth || 600;
+  canvas.width = w; canvas.height = 120;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, 120);
+
+  // Build equity curve
+  var equity = [0];
+  trades.forEach(function(t) { equity.push(equity[equity.length - 1] + t.pnl); });
+
+  var mn = Math.min.apply(null, equity);
+  var mx = Math.max.apply(null, equity);
+  var rng = mx - mn || 1;
+  var pts = equity.map(function(v, i) {
+    return { x: 1 + i * (w - 2) / (equity.length - 1), y: 105 - ((v - mn) / rng) * 90 };
+  });
+
+  var isUp = equity[equity.length - 1] >= 0;
+  var grad = ctx.createLinearGradient(0, 0, 0, 120);
+  grad.addColorStop(0, isUp ? 'rgba(70,201,138,0.2)' : 'rgba(255,107,107,0.15)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+  ctx.lineTo(pts[pts.length - 1].x, 120); ctx.lineTo(pts[0].x, 120);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+  ctx.strokeStyle = isUp ? '#46C98A' : '#FF6B6B';
+  ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Zero line
+  var zeroY = 105 - ((0 - mn) / rng) * 90;
+  ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(w, zeroY);
+  ctx.strokeStyle = 'rgba(140,150,170,0.3)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Dot on each trade
+  pts.forEach(function(p, i) {
+    if (i === 0) return;
+    var t = trades[i - 1];
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = t.result === 'WIN' ? '#46C98A' : '#FF6B6B';
+    ctx.fill();
+  });
+}
+
+function btFilterTrades(filter, el) {
+  document.querySelectorAll('#btTradeFilter .scr-opt').forEach(function(b) { b.classList.remove('on'); });
+  if (el) el.classList.add('on');
+  var filtered = BT_ALL_TRADES;
+  if (filter !== 'ALL') filtered = BT_ALL_TRADES.filter(function(t) { return t.result === filter; });
+  renderBtTable(filtered);
+}
+
+function renderBtTable(trades) {
+  BT_TRADES = trades;
+  var tbody = document.getElementById('btTbody');
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No trades match this filter</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trades.map(function(t) {
+    var pnlCol = t.pnl >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    var retCol = t.retPct >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    var resultIcon = t.result === 'WIN' ? '✅' : t.result === 'LOSS' ? '❌' : '⏳';
+    var resultCol  = t.result === 'WIN' ? 'var(--emerald)' : t.result === 'LOSS' ? 'var(--sell)' : '#B8922A';
+    var sigClass   = t.signal === 'BUY' ? 'hb-buy' : t.signal === 'SELL' ? 'hb-sell' : 'hb-hold';
+    return '<tr onclick="openDetail(\'' + t.sym + '\')" style="cursor:pointer;">'
+      + '<td><div style="font-weight:600;font-size:12px;">' + t.sym + '</div><div style="font-size:9px;color:var(--muted);">' + t.sector + '</div></td>'
+      + '<td><span class="h-badge ' + sigClass + '">' + t.signal + '</span></td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;">₹' + t.entry.toFixed(0) + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--emerald);">₹' + t.target + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--sell);">₹' + t.sl + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;">₹' + t.exitPrice.toFixed(0) + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;font-weight:500;color:' + pnlCol + ';">' + (t.pnl >= 0 ? '+' : '') + '₹' + Math.round(t.pnl).toLocaleString('en-IN') + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:' + retCol + ';">' + (t.retPct >= 0 ? '+' : '') + t.retPct.toFixed(1) + '%</td>'
+      + '<td style="font-size:13px;color:' + resultCol + ';">' + resultIcon + ' ' + t.result + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted);">' + t.confidence + '%</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function renderBtSectorWR(trades) {
+  var sectorData = {};
+  trades.forEach(function(t) {
+    if (!sectorData[t.sector]) sectorData[t.sector] = { wins: 0, total: 0 };
+    sectorData[t.sector].total++;
+    if (t.result === 'WIN') sectorData[t.sector].wins++;
+  });
+  var sectors = Object.keys(sectorData).sort(function(a, b) {
+    return (sectorData[b].wins / sectorData[b].total) - (sectorData[a].wins / sectorData[a].total);
+  });
+  document.getElementById('btSectorWR').innerHTML = sectors.map(function(s) {
+    var d = sectorData[s];
+    var wr = Math.round(d.wins / d.total * 100);
+    var col = wr >= 60 ? 'var(--emerald)' : wr >= 40 ? '#B8922A' : 'var(--sell)';
+    return '<div class="bt-result-row">'
+      + '<div style="font-size:11px;color:var(--ink);">' + s + ' <span style="font-size:10px;color:var(--muted);">(' + d.total + ' trades)</span></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<div style="width:60px;height:5px;border-radius:4px;background:var(--border);overflow:hidden;"><div style="width:' + wr + '%;height:5px;border-radius:4px;background:' + col + ';"></div></div>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + col + ';">' + wr + '%</span>'
+      + '</div></div>';
+  }).join('');
+}
+
+function renderBtSigAccuracy(trades) {
+  var sigData = { BUY: { wins: 0, total: 0 }, SELL: { wins: 0, total: 0 }, HOLD: { wins: 0, total: 0 } };
+  trades.forEach(function(t) {
+    if (!sigData[t.signal]) return;
+    sigData[t.signal].total++;
+    if (t.result === 'WIN') sigData[t.signal].wins++;
+  });
+  document.getElementById('btSigAccuracy').innerHTML = ['BUY', 'SELL', 'HOLD'].map(function(sig) {
+    var d = sigData[sig];
+    if (!d.total) return '';
+    var wr = Math.round(d.wins / d.total * 100);
+    var col = sig === 'BUY' ? 'var(--emerald)' : sig === 'SELL' ? 'var(--sell)' : '#B8922A';
+    var wrCol = wr >= 55 ? 'var(--emerald)' : wr >= 40 ? '#B8922A' : 'var(--sell)';
+    return '<div class="bt-result-row">'
+      + '<span style="font-size:12px;font-weight:600;color:' + col + ';">' + sig + '</span>'
+      + '<span style="font-size:11px;color:var(--muted);">' + d.total + ' trades</span>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:' + wrCol + ';">' + wr + '% WR</span>'
+      + '</div>';
+  }).join('');
+}
+
+function renderBtBestWorst(trades) {
+  var closed = trades.filter(function(t) { return t.result !== 'OPEN'; });
+  var sorted = closed.slice().sort(function(a, b) { return b.pnl - a.pnl; });
+  var best   = sorted.slice(0, 3);
+  var worst  = sorted.slice(-3).reverse();
+
+  function tradeRow(t) {
+    var col = t.pnl >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    return '<div class="bt-result-row">'
+      + '<div><div style="font-size:12px;font-weight:600;color:var(--ink);">' + t.sym + '</div>'
+      + '<div style="font-size:10px;color:var(--muted);">' + t.signal + ' · ' + t.confidence + '% conf</div></div>'
+      + '<div style="text-align:right;">'
+      + '<div style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:500;color:' + col + ';">' + (t.pnl >= 0 ? '+' : '') + '₹' + Math.round(t.pnl).toLocaleString('en-IN') + '</div>'
+      + '<div style="font-size:10px;color:' + col + ';">' + (t.retPct >= 0 ? '+' : '') + t.retPct.toFixed(1) + '%</div>'
+      + '</div></div>';
+  }
+
+  document.getElementById('btBestTrades').innerHTML  = best.length  ? best.map(tradeRow).join('')  : '<div style="font-size:11px;color:var(--muted);padding:10px 0;">No closed trades</div>';
+  document.getElementById('btWorstTrades').innerHTML = worst.length ? worst.map(tradeRow).join('') : '<div style="font-size:11px;color:var(--muted);padding:10px 0;">No closed trades</div>';
+}
+
+// Hook into pg navigation
+var _p9OrigPg = pg;
+pg = function(name, el) {
+  _p9OrigPg(name, el);
+  if (name === 'backtest' && BT_ALL_TRADES.length) {
+    // Re-render equity curve on tab switch (canvas needs repaint)
+    setTimeout(function() {
+      var capital = parseInt(btGetVal('btCapital')) || 10000;
+      renderBtEquity(BT_ALL_TRADES, capital);
+    }, 50);
+  }
+};
+</script>
+
+        
