@@ -454,6 +454,90 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .p5-tab.on{background:var(--bg);color:var(--ink);box-shadow:0 2px 8px rgba(24,34,53,0.08);}
 .p5-section{display:none;}
 .p5-section.active{display:block;}
+
+/* ══ PHASE 15: MOBILE RESPONSIVE ══ */
+/* Mobile bottom nav */
+.mob-nav{display:none;}
+
+@media(max-width:768px){
+  /* Shell — single column, no sidebar */
+  .shell{grid-template-columns:1fr;grid-template-rows:56px 1fr 60px;height:100vh;overflow:hidden;}
+  .topbar{padding:0 14px;grid-column:1;}
+  .logo-tag{display:none;}
+  .logo-div{display:none;}
+  /* Topbar strategy mode — compact */
+  .strat-mode-wrap{gap:1px;}
+  .strat-btn{width:24px;height:24px;font-size:11px;}
+  .strat-label{font-size:9px;min-width:52px;}
+  .idx{padding:4px 8px;font-size:10px;}
+  /* Hide desktop sidebar */
+  .sidebar{display:none;}
+  /* Content fills screen */
+  .content{padding:14px 14px 70px;grid-column:1;}
+  /* Mobile bottom nav bar */
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--card);border-top:1px solid var(--border);z-index:500;align-items:center;justify-content:space-around;padding:0 4px;}
+  .mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;cursor:pointer;border-radius:10px;transition:all 0.15s;color:var(--muted);flex:1;}
+  .mob-nav-item.on{color:var(--emerald);}
+  .mob-nav-item:active{background:var(--bg);}
+  .mob-nav-ic{font-size:18px;line-height:1;}
+  .mob-nav-lbl{font-size:8px;font-family:'Inter',sans-serif;letter-spacing:0.3px;}
+  /* More menu */
+  .mob-more-menu{display:none;position:fixed;bottom:60px;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:499;padding:12px;animation:fadeUp 0.2s ease both;}
+  .mob-more-menu.open{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .mob-more-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;cursor:pointer;border-radius:12px;background:var(--bg);color:var(--muted);transition:all 0.15s;}
+  .mob-more-item.on{background:rgba(70,201,138,0.08);color:var(--emerald);}
+  .mob-more-ic{font-size:18px;}
+  .mob-more-lbl{font-size:9px;font-family:'Inter',sans-serif;text-align:center;}
+  /* Cards */
+  .hero-inner{grid-template-columns:1fr;gap:16px;}
+  .conf-r{flex-direction:row;justify-content:center;gap:16px;}
+  .qa-grid{grid-template-columns:repeat(2,1fr);}
+  .g2{grid-template-columns:1fr;}
+  .rpt-grid{grid-template-columns:repeat(3,1fr);}
+  /* Picks scroll */
+  .pick-card{width:130px;}
+  /* Tables — horizontal scroll */
+  .sig-tbl,.scr-tbl{font-size:10px;}
+  .sig-tbl th,.scr-tbl th{padding:6px 8px;}
+  .sig-tbl td,.scr-tbl td{padding:7px 8px;}
+  /* Signals tabs */
+  .sig-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .sig-tab{font-size:10px;padding:8px 10px;}
+  /* Screener filter grid */
+  .scr-filter-grid{grid-template-columns:1fr;}
+  .scr-cards-grid{grid-template-columns:1fr 1fr;}
+  /* Backtest config */
+  .bt-config-card .scr-fblock{padding:10px;}
+  /* Paper trade grid */
+  .pt-form-grid{grid-template-columns:1fr 1fr;}
+  .pt-summary{grid-template-columns:1fr 1fr;}
+  /* Risk health tabs */
+  .p5-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .p5-tab{white-space:nowrap;font-size:10px;padding:8px 10px;}
+  /* Capital protection grids */
+  .rc-grid{grid-template-columns:1fr 1fr;}
+  /* Analytics */
+  #anlKPIRow{grid-template-columns:repeat(2,1fr);}
+  /* Outcome/Backtest KPI rows */
+  #btKpiRow{grid-template-columns:repeat(3,1fr);}
+  #ocKpiRow{grid-template-columns:repeat(3,1fr);}
+  /* Weekly summary */
+  #weeklyKpis{grid-template-columns:repeat(2,1fr);}
+  #weeklyDetails{grid-template-columns:1fr;}
+  gap:#weeklyDetails{gap:8px;}
+  /* Onboarding + modals — full width */
+  #onboardOverlay>div,#feedbackOverlay>div,#shareOverlay>div{margin:12px;border-radius:20px;}
+  /* Float buttons repositioned for mobile */
+  #feedbackBubble{bottom:70px;left:14px;width:40px;height:40px;font-size:15px;}
+  #aiChatBubble{bottom:70px;right:14px;width:44px;height:44px;font-size:18px;}
+  #aiChatPanel{width:calc(100vw - 28px);right:14px;bottom:124px;}
+  /* Detail panel */
+  .detail-panel{width:calc(100vw - 20px);max-height:92vh;}
+  /* Topbar indices — hide sensex on very small screens */
+  @media(max-width:380px){
+    .idx:last-of-type{display:none;}
+  }
+}
 </style>
 </head>
 <body>
@@ -1539,6 +1623,40 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
     </div>
   </div>
 </div>
+
+<!-- ══ PHASE 15: MOBILE BOTTOM NAV ══ -->
+<nav class="mob-nav" id="mobNav">
+  <div class="mob-nav-item on" id="mn-home" onclick="mobPg('home','mn-home')">
+    <span class="mob-nav-ic">🏠</span><span class="mob-nav-lbl">Home</span>
+  </div>
+  <div class="mob-nav-item" id="mn-signals" onclick="mobPg('signals','mn-signals')">
+    <span class="mob-nav-ic">📡</span><span class="mob-nav-lbl">Signals</span>
+  </div>
+  <div class="mob-nav-item" id="mn-picks" onclick="mobPg('picks','mn-picks')">
+    <span class="mob-nav-ic">🔥</span><span class="mob-nav-lbl">Picks</span>
+  </div>
+  <div class="mob-nav-item" id="mn-watchlist" onclick="mobPg('watchlist','mn-watchlist')">
+    <span class="mob-nav-ic">⭐</span><span class="mob-nav-lbl">Watch</span>
+  </div>
+  <div class="mob-nav-item" id="mn-more" onclick="toggleMobMore()">
+    <span class="mob-nav-ic">☰</span><span class="mob-nav-lbl">More</span>
+  </div>
+</nav>
+
+<!-- More menu overlay -->
+<div class="mob-more-menu" id="mobMoreMenu">
+  <div class="mob-more-item" onclick="mobPg('reports','');closeMobMore()"><span class="mob-more-ic">📋</span><span class="mob-more-lbl">Reports</span></div>
+  <div class="mob-more-item" onclick="mobPg('riskhealth','');closeMobMore()"><span class="mob-more-ic">🛡</span><span class="mob-more-lbl">Risk</span></div>
+  <div class="mob-more-item" onclick="mobPg('papertrade','');closeMobMore()"><span class="mob-more-ic">📓</span><span class="mob-more-lbl">Paper</span></div>
+  <div class="mob-more-item" onclick="mobPg('alerts','');closeMobMore()"><span class="mob-more-ic">🔔</span><span class="mob-more-lbl">Alerts</span></div>
+  <div class="mob-more-item" onclick="mobPg('journal','');closeMobMore()"><span class="mob-more-ic">📝</span><span class="mob-more-lbl">Journal</span></div>
+  <div class="mob-more-item" onclick="mobPg('analytics','');closeMobMore()"><span class="mob-more-ic">📈</span><span class="mob-more-lbl">Analytics</span></div>
+  <div class="mob-more-item" onclick="mobPg('screener','');closeMobMore()"><span class="mob-more-ic">🔍</span><span class="mob-more-lbl">Screener</span></div>
+  <div class="mob-more-item" onclick="mobPg('backtest','');closeMobMore()"><span class="mob-more-ic">📊</span><span class="mob-more-lbl">Backtest</span></div>
+  <div class="mob-more-item" onclick="mobPg('outcomes','');closeMobMore()"><span class="mob-more-ic">🎯</span><span class="mob-more-lbl">Outcomes</span></div>
+  <div class="mob-more-item" onclick="mobPg('settings','');closeMobMore()"><span class="mob-more-ic">⚙️</span><span class="mob-more-lbl">Settings</span></div>
+</div>
+
 </div>
 
 <!-- ══ PHASE 3: STOCK DETAIL MODAL ══ -->
@@ -5865,4 +5983,112 @@ var _p14OrigLaunch = typeof launch !== 'undefined' ? launch : null;
 window.addEventListener('load', function() {
   setTimeout(maybeShowOnboard, 1000);
 });
+</script>
+
+<!-- ══ PHASE 15: MOBILE NAV SCRIPT ══ -->
+<script>
+// ══════════════════════════════════════════
+//  PHASE 15: MOBILE RESPONSIVE + PRODUCTION
+// ══════════════════════════════════════════
+
+var MOB_MORE_OPEN = false;
+var MOB_CURRENT   = 'home';
+
+function mobPg(name, btnId) {
+  // Navigate using main pg()
+  pg(name, null);
+  // Update mobile nav highlight
+  document.querySelectorAll('.mob-nav-item').forEach(function(b){ b.classList.remove('on'); });
+  if (btnId) {
+    var btn = document.getElementById(btnId);
+    if (btn) btn.classList.add('on');
+  }
+  MOB_CURRENT = name;
+  closeMobMore();
+  // Scroll content to top
+  var content = document.querySelector('.content');
+  if (content) content.scrollTop = 0;
+}
+
+function toggleMobMore() {
+  MOB_MORE_OPEN = !MOB_MORE_OPEN;
+  var menu = document.getElementById('mobMoreMenu');
+  var btn  = document.getElementById('mn-more');
+  menu.classList.toggle('open', MOB_MORE_OPEN);
+  if (btn) btn.classList.toggle('on', MOB_MORE_OPEN);
+}
+
+function closeMobMore() {
+  MOB_MORE_OPEN = false;
+  var menu = document.getElementById('mobMoreMenu');
+  var btn  = document.getElementById('mn-more');
+  if (menu) menu.classList.remove('open');
+  if (btn)  btn.classList.remove('on');
+}
+
+// Close more menu when tapping outside
+document.addEventListener('click', function(e) {
+  if (MOB_MORE_OPEN) {
+    var menu = document.getElementById('mobMoreMenu');
+    var btn  = document.getElementById('mn-more');
+    if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+      closeMobMore();
+    }
+  }
+});
+
+// Keep mobile nav in sync with desktop nav pg() calls
+var _p15OrigPg = pg;
+pg = function(name, el) {
+  _p15OrigPg(name, el);
+  // Sync mobile nav
+  var mobMap = { home:'mn-home', signals:'mn-signals', picks:'mn-picks', watchlist:'mn-watchlist' };
+  document.querySelectorAll('.mob-nav-item').forEach(function(b){ b.classList.remove('on'); });
+  var mobBtn = mobMap[name] ? document.getElementById(mobMap[name]) : null;
+  if (mobBtn) mobBtn.classList.add('on');
+  else {
+    // For pages in "more" menu — highlight more button
+    var more = document.getElementById('mn-more');
+    if (more && name !== 'home' && name !== 'signals' && name !== 'picks' && name !== 'watchlist') {
+      more.classList.add('on');
+    }
+  }
+  MOB_CURRENT = name;
+};
+
+// Touch swipe support for content area — swipe left/right to navigate main pages
+(function(){
+  var startX = 0, startY = 0;
+  var MAIN_PAGES = ['home','picks','signals','watchlist','reports'];
+  var content = document.querySelector('.content');
+  if (!content) return;
+  content.addEventListener('touchstart', function(e){
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  content.addEventListener('touchend', function(e){
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    // Only horizontal swipes (dx > dy*2) and significant movement (>60px)
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+      var idx = MAIN_PAGES.indexOf(MOB_CURRENT);
+      if (dx < 0 && idx < MAIN_PAGES.length - 1) {
+        // Swipe left → next page
+        var next = MAIN_PAGES[idx + 1];
+        var mobMap = { home:'mn-home', signals:'mn-signals', picks:'mn-picks', watchlist:'mn-watchlist' };
+        mobPg(next, mobMap[next] || '');
+      } else if (dx > 0 && idx > 0) {
+        // Swipe right → prev page
+        var prev = MAIN_PAGES[idx - 1];
+        var mobMap2 = { home:'mn-home', signals:'mn-signals', picks:'mn-picks', watchlist:'mn-watchlist' };
+        mobPg(prev, mobMap2[prev] || '');
+      }
+    }
+  }, { passive: true });
+})();
+
+// Production: suppress console errors on mobile in production
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  window.onerror = function(){ return true; };
+}
 </script>
