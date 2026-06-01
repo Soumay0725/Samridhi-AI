@@ -504,6 +504,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
     <div class="nav-i" onclick="pg('analytics',this)"><span class="nav-ic">&#128200;</span>Analytics</div>
     <div class="nav-i" onclick="pg('screener',this)"><span class="nav-ic">&#128270;</span>Screener<span class="nav-badge" id="screenerBadge" style="display:none;"></span></div>
     <div class="nav-i" onclick="pg('backtest',this)"><span class="nav-ic">&#128202;</span>Backtest<span class="nav-badge" id="btNavBadge" style="display:none;"></span></div>
+    <div class="nav-i" onclick="pg('outcomes',this)"><span class="nav-ic">&#127919;</span>Outcomes<span class="nav-badge" id="ocNavBadge" style="display:none;"></span></div>
     <div class="nav-sep"></div>
     <div class="nav-i" onclick="pg('settings',this)"><span class="nav-ic">&#9881;</span>Settings</div>
     <div class="sb-bot">
@@ -1317,6 +1318,77 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         <div class="empty-icon">📊</div>
         <div style="margin-bottom:8px;">Configure and run the backtest above</div>
         <div style="font-size:11px;">First run a market scan, then click Run Backtest</div>
+      </div>
+    </div>
+
+    <!-- ══ PHASE 10: SIGNAL OUTCOME TRACKER ══ -->
+    <div class="page" id="page-outcomes">
+      <div style="margin-bottom:18px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:3px;">Signal Outcomes</div>
+        <div style="font-size:12px;color:var(--muted);">Track every signal Samridhi generates — see what hit target, what stopped out, and the real accuracy over time</div>
+      </div>
+
+      <!-- Accuracy Scorecard -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;" id="ocKpiRow">
+        <div class="qa"><div class="qa-icon">🎯</div><div class="qa-lbl">Win Rate</div><div class="qa-val" id="ocWinRate" style="color:var(--emerald);">—</div></div>
+        <div class="qa"><div class="qa-icon">📊</div><div class="qa-lbl">Total Tracked</div><div class="qa-val" id="ocTotal" style="color:var(--navy);">0</div></div>
+        <div class="qa"><div class="qa-icon">✅</div><div class="qa-lbl">Target Hit</div><div class="qa-val" id="ocWins" style="color:var(--emerald);">0</div></div>
+        <div class="qa"><div class="qa-icon">❌</div><div class="qa-lbl">SL Hit</div><div class="qa-val" id="ocLosses" style="color:var(--sell);">0</div></div>
+        <div class="qa"><div class="qa-icon">⏳</div><div class="qa-lbl">Open</div><div class="qa-val" id="ocOpen" style="color:#B8922A;">0</div></div>
+      </div>
+
+      <!-- Accuracy bar -->
+      <div class="scard" style="margin-bottom:16px;" id="ocAccuracyCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">Accuracy Over Time</div>
+          <div style="display:flex;gap:6px;">
+            <button class="scr-opt on" data-val="ALL" id="ocFilterAll" onclick="ocSetFilter('ALL',this)">All</button>
+            <button class="scr-opt" data-val="BUY" onclick="ocSetFilter('BUY',this)">BUY</button>
+            <button class="scr-opt" data-val="SELL" onclick="ocSetFilter('SELL',this)">SELL</button>
+            <button class="scr-opt" data-val="HOLD" onclick="ocSetFilter('HOLD',this)">HOLD</button>
+          </div>
+        </div>
+        <canvas id="ocAccuracyCanvas" height="100" style="width:100%;display:block;"></canvas>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="btn-scan" onclick="ocSaveCurrentSignals()" style="flex:1;">📌 Save Today's Signals</button>
+        <button class="btn-s" onclick="ocMarkAll()">⚡ Auto-Update All Open</button>
+        <button class="btn-s" style="color:var(--sell);border-color:rgba(255,107,107,0.3);" onclick="ocClearAll()">🗑 Clear All</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;background:rgba(70,201,138,0.05);border:1px solid rgba(70,201,138,0.15);border-radius:10px;padding:10px 14px;'>
+        💡 <b>How it works:</b> After each scan, click <b>Save Today's Signals</b> to record all current signals. Come back later and click <b>Auto-Update</b> to check which targets/SLs were hit based on live prices.
+      </div>
+
+      <!-- Signal Log Table -->
+      <div class="scard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);">Signal Log</div>
+          <div style="font-size:11px;color:var(--muted);" id="ocLogMeta"></div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="scr-tbl">
+            <thead><tr>
+              <th>Stock</th><th>Signal</th><th>Saved On</th><th>Entry</th>
+              <th>Target</th><th>Stop Loss</th><th>Live Price</th>
+              <th>Return</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="ocTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Per-stock accuracy breakdown -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div class="scard">
+          <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:12px;">🏆 Best Performing Stocks</div>
+          <div id="ocBestStocks"></div>
+        </div>
+        <div class="scard">
+          <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:12px;">📉 Needs Improvement</div>
+          <div id="ocWorstStocks"></div>
+        </div>
       </div>
     </div>
 
@@ -4486,4 +4558,355 @@ pg = function(name, el) {
 };
 </script>
 
-        
+<!-- ══ PHASE 10: OUTCOME TRACKER SCRIPT ══ -->
+<script>
+// ══════════════════════════════════════════
+//  PHASE 10: SIGNAL OUTCOME TRACKER
+// ══════════════════════════════════════════
+
+var OC_SIGNALS = [];   // all tracked signals
+var OC_FILTER  = 'ALL';
+
+// ── Persistence ──
+function ocSave()  { try { localStorage.setItem('oc_signals', JSON.stringify(OC_SIGNALS)); } catch(e){} }
+function ocLoad()  { try { var d = localStorage.getItem('oc_signals'); OC_SIGNALS = d ? JSON.parse(d) : []; } catch(e){ OC_SIGNALS=[]; } }
+
+// ── Save current scan signals ──
+function ocSaveCurrentSignals() {
+  if (!Object.keys(SG).length) { toast('Run a scan first to get signals', 'err'); return; }
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  var timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  var saved = 0;
+
+  ST.forEach(function(sym) {
+    var sg = SG[sym]; var d = SD[sym];
+    if (!sg || !d) return;
+    // Avoid duplicates — same sym + same signal + same entry on same date
+    var exists = OC_SIGNALS.find(function(s) {
+      return s.sym === sym && s.entry === sg.entry && s.savedDate === dateStr && s.signal === sg.signal;
+    });
+    if (exists) return;
+
+    OC_SIGNALS.push({
+      id:        Date.now() + '_' + sym,
+      sym:       sym,
+      name:      NM[sym] || sym,
+      sector:    SEC[sym] || '—',
+      signal:    sg.signal,
+      confidence:sg.confidence,
+      entry:     sg.entry,
+      target:    sg.target,
+      sl:        sg.stopLoss,
+      savedDate: dateStr,
+      savedTime: timeStr,
+      savedPrice:d.price,
+      livePrice: d.price,
+      status:    'OPEN',   // OPEN | TARGET_HIT | SL_HIT | MANUAL_CLOSE
+      returnPct: 0,
+      closedDate:null
+    });
+    saved++;
+  });
+
+  if (!saved) { toast('All current signals already saved for today', 'ok'); return; }
+  ocSave();
+  renderOutcomePage();
+  toast(saved + ' signals saved to tracker ✅', 'ok');
+}
+
+// ── Auto-update open signals vs current prices ──
+function ocMarkAll() {
+  if (!OC_SIGNALS.length) { toast('No signals tracked yet', 'err'); return; }
+  var updated = 0;
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  OC_SIGNALS.forEach(function(s) {
+    if (s.status !== 'OPEN') return;
+    var livePrice = SD[s.sym] ? SD[s.sym].price : s.livePrice;
+    s.livePrice = livePrice;
+
+    var isBuy  = s.signal === 'BUY';
+    var isSell = s.signal === 'SELL';
+
+    if (isBuy) {
+      if (livePrice >= s.target)    { s.status = 'TARGET_HIT'; s.closedDate = dateStr; updated++; }
+      else if (livePrice <= s.sl)   { s.status = 'SL_HIT';     s.closedDate = dateStr; updated++; }
+    } else if (isSell) {
+      if (livePrice <= s.target)    { s.status = 'TARGET_HIT'; s.closedDate = dateStr; updated++; }
+      else if (livePrice >= s.sl)   { s.status = 'SL_HIT';     s.closedDate = dateStr; updated++; }
+    }
+
+    // Compute return
+    if (isBuy)  s.returnPct = parseFloat(((livePrice - s.entry) / s.entry * 100).toFixed(2));
+    if (isSell) s.returnPct = parseFloat(((s.entry - livePrice) / s.entry * 100).toFixed(2));
+  });
+
+  ocSave();
+  renderOutcomePage();
+  toast(updated + ' signals updated', 'ok');
+}
+
+// ── Manual status override ──
+function ocSetStatus(id, status) {
+  var s = OC_SIGNALS.find(function(x) { return x.id === id; });
+  if (!s) return;
+  var now = new Date();
+  s.status = status;
+  s.closedDate = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  if (SD[s.sym]) s.livePrice = SD[s.sym].price;
+  var isBuy = s.signal === 'BUY';
+  s.returnPct = isBuy
+    ? parseFloat(((s.livePrice - s.entry) / s.entry * 100).toFixed(2))
+    : parseFloat(((s.entry - s.livePrice) / s.entry * 100).toFixed(2));
+  ocSave();
+  renderOutcomePage();
+  toast('Signal marked as ' + status, 'ok');
+}
+
+function ocDeleteSignal(id) {
+  OC_SIGNALS = OC_SIGNALS.filter(function(s) { return s.id !== id; });
+  ocSave();
+  renderOutcomePage();
+}
+
+function ocClearAll() {
+  if (!confirm('Clear all tracked signals? This cannot be undone.')) return;
+  OC_SIGNALS = [];
+  ocSave();
+  renderOutcomePage();
+  toast('All signals cleared', 'ok');
+}
+
+function ocSetFilter(f, el) {
+  OC_FILTER = f;
+  document.querySelectorAll('#ocAccuracyCard .scr-opt').forEach(function(b) { b.classList.remove('on'); });
+  if (el) el.classList.add('on');
+  renderOutcomePage();
+}
+
+// ── Main render ──
+function renderOutcomePage() {
+  ocLoad();
+  var filtered = OC_FILTER === 'ALL' ? OC_SIGNALS : OC_SIGNALS.filter(function(s) { return s.signal === OC_FILTER; });
+
+  var closed  = filtered.filter(function(s) { return s.status !== 'OPEN'; });
+  var wins    = filtered.filter(function(s) { return s.status === 'TARGET_HIT'; });
+  var losses  = filtered.filter(function(s) { return s.status === 'SL_HIT'; });
+  var open    = filtered.filter(function(s) { return s.status === 'OPEN'; });
+  var winRate = closed.length ? Math.round(wins.length / closed.length * 100) : 0;
+
+  // KPIs
+  document.getElementById('ocTotal').textContent   = filtered.length;
+  document.getElementById('ocWins').textContent    = wins.length;
+  document.getElementById('ocLosses').textContent  = losses.length;
+  document.getElementById('ocOpen').textContent    = open.length;
+  var wrEl = document.getElementById('ocWinRate');
+  wrEl.textContent = closed.length ? winRate + '%' : '—';
+  wrEl.style.color = winRate >= 55 ? 'var(--emerald)' : winRate >= 40 ? '#B8922A' : 'var(--sell)';
+
+  // Badge
+  var badge = document.getElementById('ocNavBadge');
+  if (badge && filtered.length) {
+    badge.textContent = winRate ? winRate + '%' : filtered.length;
+    badge.style.display = 'inline';
+  }
+
+  // Log meta
+  document.getElementById('ocLogMeta').textContent = filtered.length + ' signals · ' + closed.length + ' closed · ' + open.length + ' open';
+
+  // Table
+  ocRenderTable(filtered);
+
+  // Accuracy chart
+  ocRenderAccuracyChart(filtered);
+
+  // Best/worst
+  ocRenderBestWorst(filtered);
+}
+
+function ocRenderTable(signals) {
+  var tbody = document.getElementById('ocTbody');
+  if (!signals.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted);font-size:12px;">'
+      + '<div style="font-size:28px;margin-bottom:8px;">📌</div>'
+      + 'No signals tracked yet. Run a scan and click <b>Save Today\'s Signals</b>.'
+      + '</td></tr>';
+    return;
+  }
+
+  // Sort: OPEN first, then by saved date desc
+  var sorted = signals.slice().sort(function(a, b) {
+    if (a.status === 'OPEN' && b.status !== 'OPEN') return -1;
+    if (b.status === 'OPEN' && a.status !== 'OPEN') return 1;
+    return 0;
+  });
+
+  tbody.innerHTML = sorted.map(function(s) {
+    var statusMap = {
+      'OPEN':        { icon:'⏳', col:'#B8922A',          label:'Open' },
+      'TARGET_HIT':  { icon:'✅', col:'var(--emerald)',   label:'Target Hit' },
+      'SL_HIT':      { icon:'❌', col:'var(--sell)',      label:'SL Hit' },
+      'MANUAL_CLOSE':{ icon:'🔒', col:'var(--muted)',     label:'Closed' }
+    };
+    var st = statusMap[s.status] || statusMap['OPEN'];
+    var sigClass = s.signal === 'BUY' ? 'hb-buy' : s.signal === 'SELL' ? 'hb-sell' : 'hb-hold';
+    var retCol   = s.returnPct >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    var livePrice = SD[s.sym] ? SD[s.sym].price : s.livePrice;
+    var livePriceStr = livePrice ? '₹' + livePrice.toLocaleString('en-IN') : '—';
+
+    var actions = s.status === 'OPEN'
+      ? '<div style="display:flex;gap:4px;">'
+        + '<button onclick="ocSetStatus(\'' + s.id + '\',\'TARGET_HIT\')" style="font-size:9px;padding:3px 6px;border-radius:6px;background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.25);cursor:pointer;">✅ Target</button>'
+        + '<button onclick="ocSetStatus(\'' + s.id + '\',\'SL_HIT\')" style="font-size:9px;padding:3px 6px;border-radius:6px;background:rgba(255,107,107,0.1);color:var(--sell);border:1px solid rgba(255,107,107,0.25);cursor:pointer;">❌ SL</button>'
+        + '<button onclick="ocDeleteSignal(\'' + s.id + '\')" style="font-size:9px;padding:3px 6px;border-radius:6px;background:var(--bg);color:var(--muted);border:1px solid var(--border);cursor:pointer;">🗑</button>'
+        + '</div>'
+      : '<button onclick="ocDeleteSignal(\'' + s.id + '\')" style="font-size:9px;padding:3px 6px;border-radius:6px;background:var(--bg);color:var(--muted);border:1px solid var(--border);cursor:pointer;">🗑</button>';
+
+    return '<tr>'
+      + '<td><div style="font-weight:600;font-size:12px;">' + s.sym + '</div><div style="font-size:9px;color:var(--muted);">' + s.sector + '</div></td>'
+      + '<td><span class="h-badge ' + sigClass + '">' + s.signal + '</span></td>'
+      + '<td style="font-size:11px;color:var(--muted);">' + s.savedDate + '<br><span style="font-size:9px;">' + s.savedTime + '</span></td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;">₹' + s.entry + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--emerald);">₹' + s.target + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--sell);">₹' + s.sl + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;">' + livePriceStr + '</td>'
+      + '<td style="font-family:\'JetBrains Mono\',monospace;color:' + retCol + ';">' + (s.returnPct >= 0 ? '+' : '') + s.returnPct + '%</td>'
+      + '<td style="color:' + st.col + ';font-size:12px;">' + st.icon + ' ' + st.label + '</td>'
+      + '<td>' + actions + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function ocRenderAccuracyChart(signals) {
+  var canvas = document.getElementById('ocAccuracyCanvas');
+  var w = canvas.offsetWidth || 600;
+  canvas.width = w; canvas.height = 100;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, 100);
+
+  // Build rolling win rate over time (by signal order)
+  var closed = signals.filter(function(s) { return s.status !== 'OPEN'; });
+  if (closed.length < 2) {
+    ctx.fillStyle = 'rgba(136,146,164,0.3)';
+    ctx.font = '12px Sora,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Need at least 2 closed signals to show chart', w / 2, 50);
+    return;
+  }
+
+  var points = [];
+  var wins = 0;
+  closed.forEach(function(s, i) {
+    if (s.status === 'TARGET_HIT') wins++;
+    points.push(Math.round(wins / (i + 1) * 100));
+  });
+
+  var mn = 0, mx = 100, rng = 100;
+  var pts = points.map(function(v, i) {
+    return { x: 1 + i * (w - 2) / (points.length - 1), y: 85 - (v / rng) * 72 };
+  });
+
+  var lastWR = points[points.length - 1];
+  var lineCol = lastWR >= 55 ? '#46C98A' : lastWR >= 40 ? '#E8BC69' : '#FF6B6B';
+
+  var grad = ctx.createLinearGradient(0, 0, 0, 100);
+  grad.addColorStop(0, lastWR >= 55 ? 'rgba(70,201,138,0.18)' : 'rgba(255,107,107,0.12)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+  ctx.lineTo(pts[pts.length-1].x, 100); ctx.lineTo(pts[0].x, 100);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
+  ctx.strokeStyle = lineCol; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // 50% reference line
+  var y50 = 85 - (50 / 100) * 72;
+  ctx.beginPath(); ctx.moveTo(0, y50); ctx.lineTo(w, y50);
+  ctx.strokeStyle = 'rgba(140,150,170,0.3)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = 'var(--muted)'; ctx.font = '9px Inter,sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText('50%', 4, y50 - 3);
+
+  // Current WR label
+  ctx.fillStyle = lineCol; ctx.font = 'bold 11px JetBrains Mono,monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(lastWR + '%', w - 4, pts[pts.length-1].y - 5);
+
+  // Dots
+  pts.forEach(function(p, i) {
+    var t = closed[i];
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = t.status === 'TARGET_HIT' ? '#46C98A' : '#FF6B6B';
+    ctx.fill();
+  });
+}
+
+function ocRenderBestWorst(signals) {
+  var stockMap = {};
+  signals.filter(function(s) { return s.status !== 'OPEN'; }).forEach(function(s) {
+    if (!stockMap[s.sym]) stockMap[s.sym] = { sym: s.sym, wins: 0, total: 0 };
+    stockMap[s.sym].total++;
+    if (s.status === 'TARGET_HIT') stockMap[s.sym].wins++;
+  });
+  var stocks = Object.values(stockMap).filter(function(s) { return s.total > 0; });
+  stocks.sort(function(a, b) { return (b.wins/b.total) - (a.wins/a.total); });
+
+  function stockRow(s) {
+    var wr = Math.round(s.wins / s.total * 100);
+    var col = wr >= 60 ? 'var(--emerald)' : wr >= 40 ? '#B8922A' : 'var(--sell)';
+    return '<div class="bt-result-row">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--ink);">' + s.sym + ' <span style="font-size:10px;color:var(--muted);">(' + s.total + ' signals)</span></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;">'
+      + '<div style="width:50px;height:4px;border-radius:4px;background:var(--border);overflow:hidden;"><div style="width:' + wr + '%;height:4px;background:' + col + ';border-radius:4px;"></div></div>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + col + ';">' + wr + '%</span>'
+      + '</div></div>';
+  }
+
+  var best  = stocks.slice(0, 5);
+  var worst = stocks.slice(-5).reverse();
+
+  document.getElementById('ocBestStocks').innerHTML  = best.length  ? best.map(stockRow).join('')  : '<div style="font-size:11px;color:var(--muted);padding:10px 0;">Track signals to see data</div>';
+  document.getElementById('ocWorstStocks').innerHTML = worst.length ? worst.map(stockRow).join('') : '<div style="font-size:11px;color:var(--muted);padding:10px 0;">Track signals to see data</div>';
+}
+
+// Hook into pg navigation + rAll
+var _p10OrigPg = pg;
+pg = function(name, el) {
+  _p10OrigPg(name, el);
+  if (name === 'outcomes') {
+    renderOutcomePage();
+    setTimeout(function() { ocRenderAccuracyChart(OC_FILTER === 'ALL' ? OC_SIGNALS : OC_SIGNALS.filter(function(s){ return s.signal === OC_FILTER; })); }, 50);
+  }
+};
+
+// Auto-update live prices when scan runs
+var _p10OrigRAll = rAll;
+rAll = function(mood) {
+  _p10OrigRAll(mood);
+  // Update live prices for open signals silently
+  OC_SIGNALS.forEach(function(s) {
+    if (s.status === 'OPEN' && SD[s.sym]) s.livePrice = SD[s.sym].price;
+  });
+  ocSave();
+  // Update badge
+  ocLoad();
+  var badge = document.getElementById('ocNavBadge');
+  var closed = OC_SIGNALS.filter(function(s) { return s.status !== 'OPEN'; });
+  var wins   = OC_SIGNALS.filter(function(s) { return s.status === 'TARGET_HIT'; });
+  if (badge && OC_SIGNALS.length) {
+    var wr = closed.length ? Math.round(wins.length / closed.length * 100) : 0;
+    badge.textContent = OC_SIGNALS.length + ' tracked';
+    badge.style.display = 'inline';
+  }
+};
+
+// Load on app start
+window.addEventListener('load', function() {
+  ocLoad();
+});
+</script>
