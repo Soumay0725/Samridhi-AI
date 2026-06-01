@@ -48,11 +48,19 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .idx-n{color:var(--muted);font-size:10px;font-family:'Inter',sans-serif;}
 .idx-v{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--ink);}
 .bell{width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:15px;position:relative;}
+/* ── Phase 11: Strategy Mode ── */
+.strat-mode-wrap{display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px;gap:2px;}
+.strat-btn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.45;}
+.strat-btn:hover{opacity:0.8;}
+.strat-btn.on{background:var(--card);box-shadow:0 1px 4px rgba(24,34,53,0.12);opacity:1;}
+.strat-label{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;white-space:nowrap;font-weight:500;min-width:72px;}
 .bell-dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--rose);}
 .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;}
-.sidebar{background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;}
-.sidebar::-webkit-scrollbar{width:3px;}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.sidebar{background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;overflow-y:scroll;overflow-x:hidden;position:relative;}
+.sidebar::-webkit-scrollbar{width:4px;}
+.sidebar::-webkit-scrollbar-track{background:var(--bg);}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.sidebar::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 .sb-wm{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);opacity:0.04;pointer-events:none;}
 .sb-wm img{height:140px;width:auto;}
 .sb-sec{padding:12px 16px 4px;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-family:'Inter',sans-serif;}
@@ -483,6 +491,13 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
       <div class="logo-tag">Prosperity Intelligence</div>
     </div>
     <div class="tb-r">
+      <!-- Phase 11: Strategy Mode -->
+      <div class="strat-mode-wrap" id="stratModeWrap">
+        <button class="strat-btn" data-mode="safe" onclick="setStratMode('safe',this)" title="Conservative — high confidence signals only">🛡</button>
+        <button class="strat-btn on" data-mode="balanced" onclick="setStratMode('balanced',this)" title="Balanced — default mode">⚖</button>
+        <button class="strat-btn" data-mode="aggressive" onclick="setStratMode('aggressive',this)" title="Aggressive — more signals, higher risk">🔥</button>
+      </div>
+      <div class="strat-label" id="stratLabel">⚖ Balanced</div>
       <div class="idx"><span class="idx-n">NIFTY 50</span>&nbsp;<span class="idx-v" id="nV">-</span><span id="nC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="idx"><span class="idx-n">SENSEX</span>&nbsp;<span class="idx-v" id="sV">-</span><span id="sC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="bell">&#128276;<div class="bell-dot"></div></div>
@@ -1812,6 +1827,8 @@ async function runScan(){
     if(sig.signal!=='HOLD')PK.push({sym:s,signal:sig,data:SD[s]});
     await sl(100);
   }
+  // Phase 11: Apply strategy mode filter to PK
+  PK = applyStratMode(PK);
   PK.sort(function(a,b){return b.signal.confidence-a.signal.confidence;});
   setP(100,'Scan complete!',PK.length+' signals found');
   await sl(600);
@@ -4911,4 +4928,113 @@ rAll = function(mood) {
 window.addEventListener('load', function() {
   ocLoad();
 });
+</script>
+
+<!-- ══ PHASE 11: STRATEGY MODE ENGINE ══ -->
+<script>
+// ══════════════════════════════════════════
+//  PHASE 11: STRATEGY MODE ENGINE
+// ══════════════════════════════════════════
+
+var STRAT_MODE = 'balanced'; // 'safe' | 'balanced' | 'aggressive'
+
+var STRAT_CONFIG = {
+  safe: {
+    label:       '🛡 Safe',
+    minConf:     75,      // only 75%+ confidence signals
+    minRR:       2.0,     // min risk:reward ratio
+    signalTypes: ['BUY'], // only BUY signals (avoid short sells)
+    maxSignals:  10,      // cap at top 10
+    moodHint:    'Conservative mode — protecting capital',
+    color:       '#5B9FFF'
+  },
+  balanced: {
+    label:       '⚖ Balanced',
+    minConf:     0,
+    minRR:       0,
+    signalTypes: ['BUY','SELL','HOLD'],
+    maxSignals:  20,
+    moodHint:    'Balanced mode — default signals',
+    color:       'var(--emerald)'
+  },
+  aggressive: {
+    label:       '🔥 Aggressive',
+    minConf:     55,      // accept lower confidence
+    minRR:       1.2,     // accept lower R:R
+    signalTypes: ['BUY','SELL'],
+    maxSignals:  20,
+    moodHint:    'Aggressive mode — maximising opportunities',
+    color:       'var(--rose)'
+  }
+};
+
+function setStratMode(mode, el) {
+  STRAT_MODE = mode;
+  // Update button states
+  document.querySelectorAll('.strat-btn').forEach(function(b) { b.classList.remove('on'); });
+  if (el) el.classList.add('on');
+  // Update label
+  var cfg = STRAT_CONFIG[mode];
+  var labelEl = document.getElementById('stratLabel');
+  if (labelEl) {
+    labelEl.textContent = cfg.label;
+    labelEl.style.color = cfg.color;
+  }
+  // Persist
+  try { localStorage.setItem('strat_mode', mode); } catch(e) {}
+  // If scan data exists, re-apply filter and re-render
+  if (Object.keys(SG).length) {
+    // Rebuild PK from SG with new mode
+    var allPK = [];
+    ST.forEach(function(s) {
+      var sig = SG[s]; var d = SD[s];
+      if (sig && d && sig.signal !== 'HOLD') allPK.push({ sym: s, signal: sig, data: d });
+    });
+    allPK.sort(function(a,b){ return b.signal.confidence - a.signal.confidence; });
+    PK = applyStratMode(allPK);
+    // Re-render all pages that use PK
+    rHero(); rPicks(); rHWL(); fP('all'); rWLFull(); rReports(); rWLCounts(); rQA();
+    // Update signals page badge
+    var sigBadge = document.getElementById('sigNavBadge');
+    if (sigBadge) sigBadge.textContent = PK.length;
+    toast(cfg.label + ' mode active — ' + PK.length + ' signals', 'ok');
+  }
+}
+
+function applyStratMode(picks) {
+  var cfg = STRAT_CONFIG[STRAT_MODE];
+  if (!cfg) return picks;
+  var filtered = picks.filter(function(p) {
+    var sig = p.signal;
+    // Signal type filter
+    if (cfg.signalTypes.indexOf(sig.signal) === -1) return false;
+    // Confidence filter
+    if (sig.confidence < cfg.minConf) return false;
+    // R:R filter
+    var rr = parseFloat(sig.rr) || 0;
+    if (cfg.minRR > 0 && rr < cfg.minRR) return false;
+    return true;
+  });
+  // Cap signals
+  return filtered.slice(0, cfg.maxSignals);
+}
+
+// Load saved mode on start
+(function() {
+  try {
+    var saved = localStorage.getItem('strat_mode') || 'balanced';
+    STRAT_MODE = saved;
+    var btn = document.querySelector('.strat-btn[data-mode="' + saved + '"]');
+    if (btn) {
+      document.querySelectorAll('.strat-btn').forEach(function(b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+    }
+    var cfg = STRAT_CONFIG[saved];
+    var labelEl = document.getElementById('stratLabel');
+    if (labelEl && cfg) {
+      labelEl.textContent = cfg.label;
+      labelEl.style.color = cfg.color;
+    }
+  } catch(e) {}
+})();
 </script>
