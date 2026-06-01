@@ -1469,7 +1469,7 @@ function enrich(d){
 }
 
 async function groq(prompt){
-  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-8b-8192',messages:[{role:'user',content:prompt}],max_tokens:320,temperature:0.2})});
+  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-70b-8192',messages:[{role:'user',content:prompt}],max_tokens:320,temperature:0.2})});
   var d=await r.json();if(d.error)throw new Error(d.error.message);
   return d.choices[0].message.content;
 }
@@ -3613,7 +3613,7 @@ async function sendAIChat(){
   ctx+='Answer concisely in 2-3 sentences. Be helpful, educational, and use Indian market context (NSE/BSE, Rs., Indian sectors). If asked about a specific stock signal, refer to the data provided.';
   try{
     var msgs=[{role:'system',content:ctx}].concat(AIC_HISTORY.slice(-8));
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-8b-8192',messages:msgs,max_tokens:250,temperature:0.5})});
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama3-70b-8192',messages:msgs,max_tokens:250,temperature:0.5})});
     var d=await r.json();
     var thinking=document.getElementById('aiThinking'); if(thinking) thinking.remove();
     if(d.error){ appendAIMsg('assistant','Sorry, I got an error: '+d.error.message); return; }
