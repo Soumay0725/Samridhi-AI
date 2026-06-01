@@ -588,6 +588,25 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         <div class="sc-h"><div class="sc-t">Watchlist</div><div style="display:flex;gap:6px;"><span class="pbadge pbuy" id="wlB">- BUY</span><span class="pbadge psell" id="wlS">- SELL</span><span class="pbadge phold" id="wlH">- HOLD</span></div></div>
         <div id="hWL"></div>
       </div>
+
+      <!-- ══ PHASE 13: WEEKLY PERFORMANCE SUMMARY ══ -->
+      <div class="scard mb24" id="weeklyCard">
+        <div class="sc-h">
+          <div class="sc-t">📅 Weekly Summary</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;" id="weeklyDateRange"></span>
+            <button onclick="toggleWeekly()" id="weeklyToggleBtn" style="font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;">Hide</button>
+          </div>
+        </div>
+        <div id="weeklyBody">
+          <!-- KPI row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;" id="weeklyKpis"></div>
+          <!-- AI insight -->
+          <div id="weeklyInsight" style="background:rgba(70,201,138,0.05);border:1px solid rgba(70,201,138,0.15);border-radius:12px;padding:11px 14px;font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:12px;display:none;"></div>
+          <!-- Best / Worst / Streak row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;" id="weeklyDetails"></div>
+        </div>
+      </div>
     </div>
     <div class="page" id="page-picks">
       <div style="margin-bottom:18px;"><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:4px;">Top Picks</div><div style="font-size:12px;color:var(--muted);">AI-ranked signals</div></div>
@@ -1508,6 +1527,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
       </div>
     </div>
 
+    <div class="page" id="page-settings">
       <div style="margin-bottom:18px;"><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);">Settings</div></div>
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
@@ -5339,5 +5359,220 @@ window.addEventListener('load', function() {
   setTimeout(function() {
     cpApplyMode();
   }, 500);
+});
+</script>
+
+<!-- ══ PHASE 13: WEEKLY SUMMARY STYLES ══ -->
+<style>
+.weekly-kpi{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+.weekly-kpi-icon{font-size:18px;margin-bottom:4px;}
+.weekly-kpi-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;margin-bottom:3px;}
+.weekly-kpi-val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:500;}
+.weekly-detail{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.weekly-detail-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;margin-bottom:6px;}
+.weekly-detail-val{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.weekly-detail-sub{font-size:10px;color:var(--muted);}
+.streak-dots{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
+.streak-dot{width:10px;height:10px;border-radius:50%;}
+</style>
+
+<!-- ══ PHASE 13: WEEKLY SUMMARY SCRIPT ══ -->
+<script>
+// ══════════════════════════════════════════
+//  PHASE 13: WEEKLY PERFORMANCE SUMMARY
+// ══════════════════════════════════════════
+
+var WEEKLY_OPEN = true;
+
+function toggleWeekly() {
+  WEEKLY_OPEN = !WEEKLY_OPEN;
+  document.getElementById('weeklyBody').style.display = WEEKLY_OPEN ? 'block' : 'none';
+  document.getElementById('weeklyToggleBtn').textContent = WEEKLY_OPEN ? 'Hide' : 'Show';
+  try { localStorage.setItem('weekly_open', WEEKLY_OPEN ? '1' : '0'); } catch(e) {}
+}
+
+function getWeekRange() {
+  var now = new Date();
+  var day = now.getDay(); // 0=Sun
+  var mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  var fmt = function(d) { return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }); };
+  return { start: mon, end: sun, label: fmt(mon) + ' – ' + fmt(sun) };
+}
+
+function getWeeklyStats() {
+  // Pull from OC_SIGNALS (outcome tracker) — signals saved this week
+  var signals = typeof OC_SIGNALS !== 'undefined' ? OC_SIGNALS : [];
+  var trades  = typeof PT_TRADES  !== 'undefined' ? PT_TRADES  : [];
+  var week    = getWeekRange();
+
+  // Filter signals saved this week
+  var weekSigs = signals.filter(function(s) {
+    if (!s.savedDate) return false;
+    // Parse savedDate like "02 Jun 2026"
+    try {
+      var parts = s.savedDate.split(' ');
+      var d = new Date(parts[1] + ' ' + parts[0] + ' ' + parts[2]);
+      return d >= week.start && d <= week.end;
+    } catch(e) { return false; }
+  });
+
+  var closed  = weekSigs.filter(function(s) { return s.status !== 'OPEN'; });
+  var wins    = weekSigs.filter(function(s) { return s.status === 'TARGET_HIT'; });
+  var losses  = weekSigs.filter(function(s) { return s.status === 'SL_HIT'; });
+  var winRate = closed.length ? Math.round(wins.length / closed.length * 100) : null;
+
+  // Best stock this week
+  var best = null, bestRet = -Infinity;
+  weekSigs.forEach(function(s) {
+    if (s.returnPct > bestRet) { bestRet = s.returnPct; best = s; }
+  });
+
+  // Worst stock this week
+  var worst = null, worstRet = Infinity;
+  weekSigs.forEach(function(s) {
+    if (s.returnPct < worstRet) { worstRet = s.returnPct; worst = s; }
+  });
+
+  // Weekly P&L from paper trades
+  var weekPnL = 0;
+  trades.forEach(function(t) {
+    if (t.status !== 'closed' || !t.closeDate) return;
+    try {
+      var d = new Date(t.closeDate);
+      if (d >= week.start && d <= week.end) {
+        weekPnL += t.action === 'SELL'
+          ? (t.buyPrice - t.closePrice) * t.qty
+          : (t.closePrice - t.buyPrice) * t.qty;
+      }
+    } catch(e) {}
+  });
+
+  // Streak — consecutive winning days from outcome signals
+  var dayMap = {};
+  weekSigs.filter(function(s){ return s.status !== 'OPEN'; }).forEach(function(s) {
+    var key = s.savedDate || '';
+    if (!dayMap[key]) dayMap[key] = { wins:0, total:0 };
+    dayMap[key].total++;
+    if (s.status === 'TARGET_HIT') dayMap[key].wins++;
+  });
+  var days = Object.keys(dayMap).sort();
+  var streak = 0, currentStreak = 0;
+  var dayResults = days.map(function(d) {
+    var isWin = dayMap[d].wins >= dayMap[d].total / 2;
+    if (isWin) { currentStreak++; streak = Math.max(streak, currentStreak); }
+    else { currentStreak = 0; }
+    return isWin;
+  });
+
+  // AI insight
+  var insight = generateWeeklyInsight(weekSigs, wins, losses, weekPnL, winRate);
+
+  return {
+    total: weekSigs.length,
+    wins: wins.length,
+    losses: losses.length,
+    open: weekSigs.filter(function(s){ return s.status === 'OPEN'; }).length,
+    winRate, weekPnL, best, worst,
+    streak, dayResults, insight,
+    hasScanData: Object.keys(typeof SG !== 'undefined' ? SG : {}).length > 0
+  };
+}
+
+function generateWeeklyInsight(sigs, wins, losses, pnl, wr) {
+  if (!sigs.length) {
+    return '💡 No signals tracked this week yet. Run a scan and click <b>Save Today\'s Signals</b> in Outcomes to start building your track record.';
+  }
+  var lines = [];
+  if (wr !== null) {
+    if (wr >= 65) lines.push('🏆 Excellent week — <b>' + wr + '% win rate</b> on closed signals.');
+    else if (wr >= 50) lines.push('✅ Solid week — <b>' + wr + '% win rate</b>. Signals are performing well.');
+    else if (wr >= 35) lines.push('⚠️ Mixed week — <b>' + wr + '% win rate</b>. Review signal quality and tighten filters.');
+    else lines.push('📉 Tough week — <b>' + wr + '% win rate</b>. Consider switching to 🛡 Safe mode for protection.');
+  }
+  if (pnl > 0) lines.push('Paper trades returned <b>+₹' + Math.round(pnl).toLocaleString('en-IN') + '</b> this week.');
+  else if (pnl < 0) lines.push('Paper trades lost <b>₹' + Math.round(Math.abs(pnl)).toLocaleString('en-IN') + '</b> this week — review your stop losses.');
+  var buySigs  = sigs.filter(function(s){ return s.signal === 'BUY'; });
+  var sellSigs = sigs.filter(function(s){ return s.signal === 'SELL'; });
+  var buyWR  = buySigs.filter(function(s){ return s.status === 'TARGET_HIT'; }).length / (buySigs.filter(function(s){ return s.status !== 'OPEN'; }).length || 1) * 100;
+  var sellWR = sellSigs.filter(function(s){ return s.status === 'TARGET_HIT'; }).length / (sellSigs.filter(function(s){ return s.status !== 'OPEN'; }).length || 1) * 100;
+  if (buySigs.length && sellSigs.length) {
+    if (buyWR > sellWR + 10) lines.push('BUY signals outperformed SELL signals this week (' + Math.round(buyWR) + '% vs ' + Math.round(sellWR) + '% WR).');
+    else if (sellWR > buyWR + 10) lines.push('SELL signals outperformed BUY signals this week (' + Math.round(sellWR) + '% vs ' + Math.round(buyWR) + '% WR).');
+  }
+  return lines.join(' ') || '📊 Keep tracking signals to get weekly performance insights.';
+}
+
+function renderWeeklySummary() {
+  var stats = getWeeklyStats();
+  var week  = getWeekRange();
+
+  // Date range label
+  document.getElementById('weeklyDateRange').textContent = week.label;
+
+  // Restore open/close state
+  try {
+    var saved = localStorage.getItem('weekly_open');
+    if (saved === '0') { WEEKLY_OPEN = false; document.getElementById('weeklyBody').style.display = 'none'; document.getElementById('weeklyToggleBtn').textContent = 'Show'; }
+  } catch(e) {}
+
+  // KPIs
+  var kpis = [
+    { icon:'🎯', lbl:'Win Rate',     val: stats.winRate !== null ? stats.winRate + '%' : '—',   col: stats.winRate >= 55 ? 'var(--emerald)' : stats.winRate >= 40 ? '#B8922A' : stats.winRate !== null ? 'var(--sell)' : 'var(--muted)' },
+    { icon:'✅', lbl:'Target Hit',   val: stats.wins,    col: 'var(--emerald)' },
+    { icon:'❌', lbl:'SL Hit',       val: stats.losses,  col: stats.losses > 0 ? 'var(--sell)' : 'var(--muted)' },
+    { icon:'💰', lbl:'Paper P&L',    val: (stats.weekPnL >= 0 ? '+' : '') + '₹' + Math.round(Math.abs(stats.weekPnL)).toLocaleString('en-IN'), col: stats.weekPnL >= 0 ? 'var(--emerald)' : 'var(--sell)' },
+  ];
+  document.getElementById('weeklyKpis').innerHTML = kpis.map(function(k) {
+    return '<div class="weekly-kpi"><div class="weekly-kpi-icon">' + k.icon + '</div>'
+      + '<div class="weekly-kpi-lbl">' + k.lbl + '</div>'
+      + '<div class="weekly-kpi-val" style="color:' + k.col + ';">' + k.val + '</div></div>';
+  }).join('');
+
+  // AI insight
+  var insightEl = document.getElementById('weeklyInsight');
+  insightEl.innerHTML = '🤖 <b>Samridhi says:</b> ' + stats.insight;
+  insightEl.style.display = 'block';
+
+  // Best / Worst / Streak
+  var bestHtml = stats.best
+    ? '<div class="weekly-detail-val" style="color:var(--emerald);">' + stats.best.sym + '</div>'
+      + '<div class="weekly-detail-sub">+' + stats.best.returnPct + '% · ' + stats.best.signal + '</div>'
+    : '<div class="weekly-detail-sub">No closed signals yet</div>';
+
+  var worstHtml = stats.worst
+    ? '<div class="weekly-detail-val" style="color:var(--sell);">' + stats.worst.sym + '</div>'
+      + '<div class="weekly-detail-sub">' + stats.worst.returnPct + '% · ' + stats.worst.signal + '</div>'
+    : '<div class="weekly-detail-sub">No closed signals yet</div>';
+
+  var dots = stats.dayResults.map(function(w) {
+    return '<div class="streak-dot" style="background:' + (w ? 'var(--emerald)' : 'var(--sell)') + ';"></div>';
+  }).join('');
+  var streakHtml = '<div class="weekly-detail-val" style="color:var(--gold);">' + stats.streak + ' day' + (stats.streak !== 1 ? 's' : '') + '</div>'
+    + '<div class="streak-dots">' + (dots || '<div style="font-size:10px;color:var(--muted);">No days tracked</div>') + '</div>';
+
+  document.getElementById('weeklyDetails').innerHTML =
+    '<div class="weekly-detail"><div class="weekly-detail-lbl">🏆 Best Stock</div>' + bestHtml + '</div>'
+    + '<div class="weekly-detail"><div class="weekly-detail-lbl">📉 Worst Stock</div>' + worstHtml + '</div>'
+    + '<div class="weekly-detail"><div class="weekly-detail-lbl">🔥 Win Streak</div>' + streakHtml + '</div>';
+}
+
+// Hook into rAll — refresh weekly summary after every scan
+var _p13OrigRAll = rAll;
+rAll = function(mood) {
+  _p13OrigRAll(mood);
+  renderWeeklySummary();
+};
+
+// Hook into pg — refresh when home is visited
+var _p13OrigPg = pg;
+pg = function(name, el) {
+  _p13OrigPg(name, el);
+  if (name === 'home') renderWeeklySummary();
+};
+
+// Load on start
+window.addEventListener('load', function() {
+  setTimeout(renderWeeklySummary, 300);
 });
 </script>
