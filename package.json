@@ -2070,8 +2070,7 @@ async function getSig(sym, dat) {
     try {
       var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + scored.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + scored.confidence + '%. Plain text only, max 30 words.';
       reason = await groq(ep);
-      reason = reason.replace(/["""*#
-]/g, '').trim().slice(0, 160);
+      reason = reason.replace(/[^\x20-\x7E]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
     } catch(e) { reason = ''; }
   }
   if (!reason) reason = fallbackReason(scored.signal, dat);
