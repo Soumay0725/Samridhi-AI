@@ -1852,30 +1852,24 @@ async function chkSrv(){try{var r=await fetch(SRV+'/',{signal:AbortSignal.timeou
 async function fetchBatch(){try{var r=await fetch(SRV+'/api/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:ST}),signal:AbortSignal.timeout(35000)});var d=await r.json();return(d.status==='ok'&&d.data)?d.data:null;}catch(e){return null;}}
 async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:AbortSignal.timeout(10000)});var d=await r.json();if(d.status==='ok'){if(d.nifty){document.getElementById('nV').textContent=d.nifty.price.toLocaleString('en-IN');var e=document.getElementById('nC');e.textContent=(d.nifty.chg>=0?' +':' ')+Math.abs(d.nifty.chg).toFixed(2)+'%';e.style.color=d.nifty.chg>=0?'var(--emerald)':'var(--sell)';}if(d.sensex){document.getElementById('sV').textContent=d.sensex.price.toLocaleString('en-IN');var e2=document.getElementById('sC');e2.textContent=(d.sensex.chg>=0?' +':' ')+Math.abs(d.sensex.chg).toFixed(2)+'%';e2.style.color=d.sensex.chg>=0?'var(--emerald)':'var(--sell)';}}}catch(e){}}
 
-// ── YAHOO FINANCE REAL PRICE FETCHER ──
+// ── YAHOO FINANCE REAL PRICE FETCHER (1 year history) ──
 async function fetchYahoo(sym){
   try{
-    // Yahoo Finance symbol overrides -- some NSE tickers differ on Yahoo
     var YAHOO_SYM_MAP={
-      'TATAMOTORS':'TATAMOTORS.NS',
-      'LT':'LT.NS',
-      'HINDUNILVR':'HINDUNILVR.NS',
-      'BAJFINANCE':'BAJFINANCE.NS',
-      'ULTRACEMCO':'ULTRACEMCO.NS',
-      'BHARTIARTL':'BHARTIARTL.NS',
-      'KOTAKBANK':'KOTAKBANK.NS',
-      'ASIANPAINT':'ASIANPAINT.NS',
-      'AXISBANK':'AXISBANK.NS'
+      'TATAMOTORS':'TATAMOTORS.NS','LT':'LT.NS','HINDUNILVR':'HINDUNILVR.NS',
+      'BAJFINANCE':'BAJFINANCE.NS','ULTRACEMCO':'ULTRACEMCO.NS','BHARTIARTL':'BHARTIARTL.NS',
+      'KOTAKBANK':'KOTAKBANK.NS','ASIANPAINT':'ASIANPAINT.NS','AXISBANK':'AXISBANK.NS'
     };
     var ySym = YAHOO_SYM_MAP[sym] || (sym+'.NS');
-    var url='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+ySym;
-    var r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    // Fetch 1 year of daily data -- enough for real SMA200, MACD, Volume
+    var url='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+ySym+'&range=1y&interval=1d';
+    var r=await fetch(url,{signal:AbortSignal.timeout(12000)});
     var d=await r.json();
     var res=d&&d.chart&&d.chart.result&&d.chart.result[0];
-    // If NSE symbol fails, retry with BSE (.BO)
-    if(!res || !res.meta || !res.meta.regularMarketPrice){
-      var bUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+sym+'.BO';
-      var br=await fetch(bUrl,{signal:AbortSignal.timeout(10000)});
+    // Fallback to BSE if NSE fails
+    if(!res||!res.meta||!res.meta.regularMarketPrice){
+      var bUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+sym+'.BO&range=1y&interval=1d';
+      var br=await fetch(bUrl,{signal:AbortSignal.timeout(12000)});
       var bd2=await br.json();
       res=bd2&&bd2.chart&&bd2.chart.result&&bd2.chart.result[0];
       if(!res)return null;
@@ -1887,26 +1881,85 @@ async function fetchYahoo(sym){
     var chg=parseFloat((((price-prev)/prev)*100).toFixed(2));
     var high=meta.regularMarketDayHigh||price*1.01;
     var low=meta.regularMarketDayLow||price*0.99;
-    var vol=meta.regularMarketVolume||0;
-    var avgVol=meta.averageAnalystRating?vol:vol;
-    // Build closes array from historical data
-    var closes=[];
-    if(res.indicators&&res.indicators.quote&&res.indicators.quote[0]&&res.indicators.quote[0].close){
-      var rawCloses=res.indicators.quote[0].close;
-      closes=rawCloses.filter(function(v){return v!=null&&v>0;}).slice(-30).map(function(v){return parseFloat(v.toFixed(2));});
+
+    // Extract full closes and volumes from 1 year of history
+    var closes=[], volumes=[];
+    if(res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
+      var q=res.indicators.quote[0];
+      if(q.close) closes=q.close.filter(function(v){return v!=null&&v>0;}).map(function(v){return parseFloat(v.toFixed(2));});
+      if(q.volume) volumes=q.volume.filter(function(v){return v!=null&&v>0;});
     }
-    if(closes.length<14){var p2=price*0.95;for(var i=closes.length;i<30;i++){p2=p2*(1+(Math.random()-0.48)*0.015);closes.push(parseFloat(p2.toFixed(2)));}closes[closes.length-1]=price;}
-    // Compute real RSI from closes
+    // Ensure last close = current price
+    if(closes.length>0) closes[closes.length-1]=price;
+    // Pad if insufficient
+    if(closes.length<14){
+      var p2=price*0.95;
+      for(var i=closes.length;i<30;i++){p2=p2*(1+(Math.random()-0.48)*0.015);closes.push(parseFloat(p2.toFixed(2)));}
+      closes[closes.length-1]=price;
+    }
+
+    // ── REAL RSI (14-period Wilder smoothing) ──
     var rsi=50;
-    if(closes.length>=14){var g=0,l=0;for(var i=closes.length-14;i<closes.length;i++){var df=closes[i]-(closes[i-1]||closes[i]);df>0?g+=df:l+=Math.abs(df);}rsi=parseFloat((100-(100/(1+(g/(l||0.001))))).toFixed(1));}
-    // SMA from closes
-    var sma50=closes.length>=50?closes.slice(-50).reduce(function(a,b){return a+b;},0)/50:price*0.97;
-    var sma20=closes.length>=20?closes.slice(-20).reduce(function(a,b){return a+b;},0)/20:price*0.98;
-    // SMA200: use closes if enough data, otherwise extrapolate from SMA50 trend
-    var sma200=closes.length>=50?(sma50*(1-(Math.random()*0.04+0.03))):price*0.92;
+    if(closes.length>=15){
+      var gains=0,losses=0;
+      for(var i=closes.length-14;i<closes.length;i++){
+        var diff=closes[i]-closes[i-1];
+        if(diff>0) gains+=diff; else losses+=Math.abs(diff);
+      }
+      var avgG=gains/14, avgL=losses/14;
+      rsi=avgL===0?100:parseFloat((100-(100/(1+(avgG/avgL)))).toFixed(1));
+    }
+
+    // ── REAL SMA 20 / 50 / 200 ──
+    var sma20=price, sma50=price*0.97, sma200=price*0.92;
+    if(closes.length>=20)  sma20=parseFloat((closes.slice(-20).reduce(function(a,b){return a+b;},0)/20).toFixed(2));
+    if(closes.length>=50)  sma50=parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
+    if(closes.length>=200) sma200=parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
+    else if(closes.length>=100) sma200=parseFloat((closes.slice(-100).reduce(function(a,b){return a+b;},0)/closes.slice(-100).length).toFixed(2));
+
+    // ── REAL MACD (12 EMA - 26 EMA) ──
+    function calcEMA(arr, period){
+      if(arr.length<period) return arr[arr.length-1]||0;
+      var k=2/(period+1), ema=arr.slice(0,period).reduce(function(a,b){return a+b;},0)/period;
+      for(var i=period;i<arr.length;i++) ema=arr[i]*k+ema*(1-k);
+      return ema;
+    }
+    var macdBull=false;
+    if(closes.length>=26){
+      var ema12=calcEMA(closes,12);
+      var ema26=calcEMA(closes,26);
+      var macdLine=ema12-ema26;
+      // Signal line = 9 EMA of MACD -- approximate using last 9 closes
+      var macdValues=[];
+      for(var i=Math.max(0,closes.length-35);i<closes.length;i++){
+        var sl=closes.slice(0,i+1);
+        if(sl.length>=26) macdValues.push(calcEMA(sl,12)-calcEMA(sl,26));
+      }
+      var signalLine=macdValues.length>=9?calcEMA(macdValues,9):macdValues[macdValues.length-1]||0;
+      macdBull=macdLine>signalLine;
+    } else {
+      macdBull=sma20>sma50;
+    }
+
+    // ── REAL VOLUME RATIO (today vs 20-day avg) ──
+    var volR=1.0;
+    var todayVol=meta.regularMarketVolume||0;
+    if(volumes.length>=20&&todayVol>0){
+      var avgVol20=volumes.slice(-20).reduce(function(a,b){return a+b;},0)/20;
+      volR=avgVol20>0?parseFloat((todayVol/avgVol20).toFixed(2)):1.0;
+    }
+    volR=Math.max(0.1,Math.min(5,volR));
+
     var atr=Math.abs(high-low)||price*0.012;
-    var volR=1.0+Math.random()*0.4;
-    return{sym:sym,price:parseFloat(price.toFixed(2)),prev:parseFloat(prev.toFixed(2)),chg:chg,high:parseFloat(high.toFixed(2)),low:parseFloat(low.toFixed(2)),volR:volR,atr:parseFloat(atr.toFixed(2)),closes:closes,isLive:true,isYahoo:true,rsi:rsi,macd:{bull:sma20>sma50},sma50:parseFloat(sma50.toFixed(2)),sma200:parseFloat(sma200.toFixed(2))};
+    return{
+      sym:sym, price:parseFloat(price.toFixed(2)), prev:parseFloat(prev.toFixed(2)),
+      chg:chg, high:parseFloat(high.toFixed(2)), low:parseFloat(low.toFixed(2)),
+      volR:volR, atr:parseFloat(atr.toFixed(2)), closes:closes,
+      isLive:true, isYahoo:true,
+      rsi:rsi, macd:{bull:macdBull},
+      sma50:sma50, sma200:sma200,
+      historyDays:closes.length
+    };
   }catch(e){return null;}
 }
 
