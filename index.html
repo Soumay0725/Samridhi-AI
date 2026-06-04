@@ -2106,21 +2106,28 @@ function calcScore(dat) {
     confidence = Math.round(55 + (3.5 - Math.abs(rawScore)) / 3.5 * 20);
   }
   confidence = Math.max(50, Math.min(95, confidence));
-  var atrSL = (dat.atr || dat.price * 0.015) * 2;
+  // ATR-based risk — same formula as the PRD spec
+  // risk = 1.5 x ATR, target = price +/- (reward multiplier x risk)
+  var atr = dat.atr || dat.price * 0.015;
+  var risk = atr * 1.5;
+  var atrSL = risk;  // SL = 1.5 x ATR from entry
   var entry = Math.round(dat.price);
   var target, stopLoss, horizon;
   if (signal === 'BUY') {
     stopLoss = Math.round(dat.price - atrSL);
-    var tMult = rawScore >= 7 ? 0.10 : rawScore >= 5 ? 0.08 : 0.06;
-    target = Math.round(dat.price * (1 + tMult));
+    // Reward multiplier scales with conviction: strong=3x, medium=2x, weak=1.5x
+    var rewardMult = rawScore >= 7 ? 3.0 : rawScore >= 5 ? 2.0 : 1.5;
+    target = Math.round(dat.price + (risk * rewardMult));
     horizon = rawScore >= 7 ? 'Positional (1-3 months)' : rawScore >= 5 ? 'Swing (3-10 days)' : 'Intraday';
   } else if (signal === 'SELL') {
     stopLoss = Math.round(dat.price + atrSL);
-    target = Math.round(dat.price * 0.93);
+    // SELL target: price falls by 2x risk (2:1 reward)
+    target = Math.round(dat.price - (risk * 2.0));
     horizon = 'Swing (3-7 days)';
   } else {
     stopLoss = Math.round(dat.price - atrSL);
-    target = Math.round(dat.price * 1.04);
+    // HOLD: watching for breakout — 1x risk as reference target
+    target = Math.round(dat.price + risk);
     horizon = 'Watch - no clear setup';
   }
   var reward = Math.abs(target - entry);
