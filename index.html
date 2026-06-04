@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#F5F6FA;--card:#FFFFFF;--navy:#182235;--ink:#2C3140;--emerald:#46C98A;--gold:#E8BC69;--rose:#D7A58E;--muted:#8892A4;--sell:#FF6B6B;--border:#E8EBF2;}
-html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:var(--ink);}
+html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.6);}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -19,10 +19,10 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .setup-logo{text-align:center;margin-bottom:28px;}
 .setup-logo img{height:150px;width:auto;animation:float 4s ease-in-out infinite;}
 .s-lbl{font-size:11px;color:var(--muted);font-family:'Inter',sans-serif;margin-bottom:5px;display:block;margin-top:10px;}
-.s-inp{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--ink);font-family:'Sora',sans-serif;font-size:12px;outline:none;transition:border-color 0.2s;}
+.s-inp{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;outline:none;transition:border-color 0.2s;}
 .s-inp:focus{border-color:var(--rose);}
 .s-inp::placeholder{color:var(--muted);}
-.s-btn{width:100%;padding:13px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;transition:all 0.2s;}
+.s-btn{width:100%;padding:13px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;transition:all 0.2s;}
 .s-btn:hover{background:#0F1A2E;transform:translateY(-1px);}
 .s-note{font-size:10px;color:var(--muted);text-align:center;margin-top:10px;font-weight:300;line-height:1.6;}
 .loading{position:fixed;inset:0;background:rgba(245,246,250,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(8px);}
@@ -56,7 +56,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .strat-label{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;white-space:nowrap;font-weight:500;min-width:72px;}
 .bell-dot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--rose);}
 .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;}
-.sidebar{background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;overflow-y:scroll;overflow-x:hidden;position:relative;}
+.sidebar{background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;position:relative;}
 .sidebar::-webkit-scrollbar{width:4px;}
 .sidebar::-webkit-scrollbar-track{background:var(--bg);}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
@@ -109,9 +109,9 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .chip.neg{background:rgba(255,107,107,0.06);border-color:rgba(255,107,107,0.2);color:var(--sell);}
 .chip.neu{background:rgba(232,188,105,0.06);border-color:rgba(232,188,105,0.2);color:#B8922A;}
 .hero-btns{display:flex;gap:10px;}
-.btn-scan{padding:12px 24px;border-radius:14px;background:var(--rose);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-scan{padding:12px 24px;border-radius:14px;background:var(--rose);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
 .btn-scan:hover{transform:translateY(-1px);}
-.btn-s{padding:12px 18px;border-radius:14px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s;}
+.btn-s{padding:12px 18px;border-radius:14px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s;}
 .btn-s:hover{border-color:var(--rose);color:var(--rose);}
 .conf-r{display:flex;flex-direction:column;align-items:center;gap:10px;}
 .conf-pct{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500;color:var(--navy);}
@@ -167,12 +167,12 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .ai-box{background:rgba(70,201,138,0.04);border:1px solid rgba(70,201,138,0.12);border-radius:12px;padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.7;}
 .ai-box b{color:var(--emerald);font-weight:500;}
 .htabs{display:flex;gap:6px;margin-bottom:16px;}
-.htab{padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s;}
+.htab{padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;transition:all 0.2s;}
 .htab.on{background:rgba(70,201,138,0.08);border-color:rgba(70,201,138,0.25);color:var(--emerald);}
 .s-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
 .s-row:last-child{border-bottom:none;}
-.s-inp2{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--ink);font-family:'Sora',sans-serif;font-size:12px;outline:none;width:200px;}
-.save-btn{padding:10px 22px;border-radius:12px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:16px;}
+.s-inp2{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;outline:none;width:200px;}
+.save-btn{padding:10px 22px;border-radius:12px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:16px;}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;font-weight:300;}
 .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid rgba(70,201,138,0.3);border-radius:14px;padding:12px 18px;font-size:12px;color:var(--ink);box-shadow:0 8px 32px rgba(24,34,53,0.1);z-index:9999;display:none;}
@@ -186,7 +186,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .mb24{margin-bottom:24px;}
 /* ── PHASE 2: SIGNALS PAGE ── */
 .sig-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:5px;margin-bottom:16px;}
-.sig-tab{flex:1;padding:10px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.sig-tab{flex:1;padding:10px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
 .sig-tab:hover{color:var(--ink);}
 .sig-tab.on{background:var(--bg);color:var(--ink);box-shadow:0 2px 8px rgba(24,34,53,0.08);}
 .sig-tab.on .stab-icon{color:var(--emerald);}
@@ -242,7 +242,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .sig-empty-icon{font-size:36px;margin-bottom:12px;opacity:.4;}
 .sig-empty-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;}
 .sig-empty-sub{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
-.sig-scan-btn{background:var(--navy);border:none;color:#fff;padding:10px 22px;border-radius:12px;font-family:'Sora',sans-serif;font-weight:600;font-size:12px;cursor:pointer;transition:all .2s;}
+.sig-scan-btn{background:var(--navy);border:none;color:#fff;padding:10px 22px;border-radius:12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-weight:600;font-size:12px;cursor:pointer;transition:all .2s;}
 .sig-scan-btn:hover{transform:translateY(-1px);}
 /* ── PHASE 3: STOCK DETAIL MODAL ── */
 .detail-overlay{position:fixed;inset:0;background:rgba(24,34,53,0.55);backdrop-filter:blur(4px);z-index:500;display:none;align-items:flex-start;justify-content:flex-end;padding:12px;}
@@ -308,7 +308,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .dp-rr-labels{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;font-family:'JetBrains Mono',monospace;}
 /* Action buttons */
 .dp-actions{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--border);flex-shrink:0;}
-.dp-act-btn{flex:1;padding:11px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all .2s;border:none;}
+.dp-act-btn{flex:1;padding:11px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;transition:all .2s;border:none;}
 .dp-act-primary{background:var(--navy);color:#fff;}
 .dp-act-primary:hover{background:#0F1A2E;}
 .dp-act-sec{background:var(--bg);border:1px solid var(--border) !important;color:var(--muted);border:none;}
@@ -337,16 +337,16 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .pt-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
 .pt-field{display:flex;flex-direction:column;gap:5px;}
 .pt-field label{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.8px;}
-.pt-field input,.pt-field select{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--ink);font-family:'Sora',sans-serif;font-size:12px;outline:none;transition:border-color .2s;}
+.pt-field input,.pt-field select{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;outline:none;transition:border-color .2s;}
 .pt-field input:focus,.pt-field select:focus{border-color:var(--rose);}
-.pt-add-btn{width:100%;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pt-add-btn{width:100%;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
 .pt-add-btn:hover{background:#0F1A2E;transform:translateY(-1px);}
 .pt-add-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .pt-trades-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px;}
 .pt-trades-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .pt-trades-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy);}
 .pt-tabs{display:flex;gap:6px;}
-.pt-tab{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;}
+.pt-tab{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;transition:all .2s;}
 .pt-tab.on{background:rgba(70,201,138,0.08);border-color:rgba(70,201,138,0.25);color:var(--emerald);}
 .pt-trade-row{display:grid;grid-template-columns:1fr 80px 90px 90px 100px 90px 80px;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);}
 .pt-trade-row:last-child{border-bottom:none;}
@@ -356,7 +356,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .pt-td.mono{font-family:'JetBrains Mono',monospace;}
 .pt-td.green{color:var(--emerald);font-family:'JetBrains Mono',monospace;font-weight:600;}
 .pt-td.red{color:var(--sell);font-family:'JetBrains Mono',monospace;font-weight:600;}
-.pt-close-btn{padding:4px 10px;border-radius:8px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);color:var(--sell);font-size:10px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;}
+.pt-close-btn{padding:4px 10px;border-radius:8px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);color:var(--sell);font-size:10px;font-weight:600;cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;transition:all .2s;}
 .pt-close-btn:hover{background:rgba(255,107,107,0.14);}
 .pt-empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
 .pt-empty-state .pt-e-icon{font-size:32px;margin-bottom:10px;opacity:.5;}
@@ -387,7 +387,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .rc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
 .rc-field{display:flex;flex-direction:column;gap:5px;}
 .rc-field label{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.8px;}
-.rc-field input,.rc-field select{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--ink);font-family:'Sora',sans-serif;font-size:12px;outline:none;transition:border-color .2s;}
+.rc-field input,.rc-field select{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;outline:none;transition:border-color .2s;}
 .rc-field input:focus{border-color:var(--rose);}
 .rc-results{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
 .rc-res{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:13px 15px;}
@@ -398,7 +398,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .rc-rr-risk{background:rgba(255,107,107,0.7);height:100%;}
 .rc-rr-rew{background:rgba(70,201,138,0.7);height:100%;}
 .rc-rr-labels{display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;}
-.rc-calc-btn{width:100%;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.rc-calc-btn{width:100%;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
 .rc-calc-btn:hover{background:#0F1A2E;transform:translateY(-1px);}
 .rc-warn{background:rgba(255,107,107,0.06);border:1px solid rgba(255,107,107,0.2);border-radius:12px;padding:11px 14px;font-size:12px;color:var(--sell);margin-top:10px;display:none;}
 /* Market Health */
@@ -439,7 +439,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .pm-sym{font-size:12px;font-weight:700;color:var(--ink);}
 .pm-gap{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;margin:3px 0;}
 .pm-note{font-size:10px;color:var(--muted);}
-.mh-refresh-btn{padding:8px 18px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Sora',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;}
+.mh-refresh-btn{padding:8px 18px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;cursor:pointer;transition:all .2s;}
 .mh-refresh-btn:hover{border-color:var(--emerald);color:var(--emerald);}
 /* Don't trade banner */
 .dont-trade-banner{background:rgba(255,107,107,0.07);border:1.5px solid rgba(255,107,107,0.25);border-radius:16px;padding:16px 20px;margin-bottom:14px;display:none;align-items:center;gap:14px;}
@@ -449,7 +449,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
 .dt-sub{font-size:11px;color:var(--muted);line-height:1.5;}
 /* Tab system for risk page */
 .p5-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:5px;margin-bottom:16px;}
-.p5-tab{flex:1;padding:10px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;text-align:center;}
+.p5-tab{flex:1;padding:10px;border-radius:13px;font-size:12px;font-weight:600;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;text-align:center;}
 .p5-tab:hover{color:var(--ink);}
 .p5-tab.on{background:var(--bg);color:var(--ink);box-shadow:0 2px 8px rgba(24,34,53,0.08);}
 .p5-section{display:none;}
@@ -524,7 +524,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
   /* Weekly summary */
   #weeklyKpis{grid-template-columns:repeat(2,1fr);}
   #weeklyDetails{grid-template-columns:1fr;}
-  gap:#weeklyDetails{gap:8px;}
+  #weeklyDetails{gap:8px;}
   /* Onboarding + modals -- full width */
   #onboardOverlay>div,#feedbackOverlay>div,#shareOverlay>div{margin:12px;border-radius:20px;}
   /* Float buttons repositioned for mobile */
@@ -683,7 +683,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
           <div class="sc-t">📅 Weekly Summary</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;" id="weeklyDateRange"></span>
-            <button onclick="toggleWeekly()" id="weeklyToggleBtn" style="font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;">Hide</button>
+            <button onclick="toggleWeekly()" id="weeklyToggleBtn" style="font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">Hide</button>
           </div>
         </div>
         <div id="weeklyBody">
@@ -759,7 +759,15 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
       <div id="wlFull"></div>
     </div>
     <div class="page" id="page-reports">
-      <div style="margin-bottom:18px;"><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:4px;">AI Reports</div><div style="font-size:12px;color:var(--muted);">Full technical analysis</div></div>
+      <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:2px;">AI Reports</div><div style="font-size:12px;color:var(--muted);">Full technical analysis — all 20 stocks</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rptFilters">
+          <button class="htab on" onclick="filterReports('all',this)" style="font-size:11px;padding:5px 12px;">All</button>
+          <button class="htab" onclick="filterReports('BUY',this)" style="font-size:11px;padding:5px 12px;color:var(--emerald);">BUY</button>
+          <button class="htab" onclick="filterReports('SELL',this)" style="font-size:11px;padding:5px 12px;color:var(--sell);">SELL</button>
+          <button class="htab" onclick="filterReports('HOLD',this)" style="font-size:11px;padding:5px 12px;color:#B8922A;">HOLD</button>
+        </div>
+      </div>
       <div id="reports"><div class="empty"><div class="empty-icon">&#128203;</div>Run a scan to generate reports</div></div>
     </div>
     <div class="page" id="page-papertrade">
@@ -1127,8 +1135,8 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
         <div><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:4px;">Smart Alerts</div><div style="font-size:12px;color:var(--muted);">Price levels · Signal confirmations · Exit signals · Browser notifications</div></div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="notifBtn" onclick="reqNotif()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Sora',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;" title="Enable browser notifications">🔔 Enable Notifications</button>
-          <button onclick="openAddAlert()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--navy);border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:11px;color:#fff;cursor:pointer;font-weight:500;">+ Add Alert</button>
+          <button id="notifBtn" onclick="reqNotif()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;color:var(--muted);cursor:pointer;" title="Enable browser notifications">🔔 Enable Notifications</button>
+          <button onclick="openAddAlert()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--navy);border:none;border-radius:10px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;color:#fff;cursor:pointer;font-weight:500;">+ Add Alert</button>
         </div>
       </div>
 
@@ -1148,7 +1156,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
       <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div style="font-size:13px;font-weight:600;color:var(--navy);">Active Alerts <span id="alertBadge" style="font-size:10px;background:rgba(70,201,138,0.1);color:var(--emerald);border-radius:20px;padding:1px 8px;margin-left:6px;">0</span></div>
-          <button onclick="clearFiredAlerts()" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;">Clear Fired</button>
+          <button onclick="clearFiredAlerts()" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">Clear Fired</button>
         </div>
         <div id="activeAlertsWrap">
           <div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;"><div style="font-size:28px;margin-bottom:8px;">🔕</div>No alerts set. Add one above to get notified.</div>
@@ -1170,7 +1178,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy);margin-bottom:18px;">New Alert</div>
         <div style="margin-bottom:14px;">
           <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:5px;">Alert Type</label>
-          <select id="aType" onchange="onAlertTypeChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+          <select id="aType" onchange="onAlertTypeChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
             <option value="price">💰 Price Level Alert</option>
             <option value="signal">📊 Signal Confirmation</option>
             <option value="sl">🛡️ Stop Loss Hit</option>
@@ -1179,12 +1187,12 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         </div>
         <div id="aSymRow" style="margin-bottom:14px;">
           <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:5px;">Stock</label>
-          <select id="aSym" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;"></select>
+          <select id="aSym" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;"></select>
         </div>
         <div id="aCondRow" style="margin-bottom:14px;">
           <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:5px;">Condition</label>
           <div style="display:flex;gap:8px;">
-            <select id="aCond" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+            <select id="aCond" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
               <option value="above">Price rises above</option>
               <option value="below">Price falls below</option>
             </select>
@@ -1193,11 +1201,11 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
         </div>
         <div id="aNoteRow" style="margin-bottom:18px;">
           <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:5px;">Note (optional)</label>
-          <input id="aNote" type="text" placeholder="e.g. Target hit, book profit" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+          <input id="aNote" type="text" placeholder="e.g. Target hit, book profit" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
         </div>
         <div style="display:flex;gap:10px;">
-          <button onclick="closeAddAlert()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">Cancel</button>
-          <button onclick="saveAlert()" style="flex:2;padding:11px;border-radius:12px;background:var(--navy);border:none;font-family:'Sora',sans-serif;font-size:12px;color:#fff;cursor:pointer;font-weight:600;">Set Alert</button>
+          <button onclick="closeAddAlert()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">Cancel</button>
+          <button onclick="saveAlert()" style="flex:2;padding:11px;border-radius:12px;background:var(--navy);border:none;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:#fff;cursor:pointer;font-weight:600;">Set Alert</button>
         </div>
       </div>
     </div>
@@ -1208,7 +1216,7 @@ html,body{height:100%;font-family:'Sora',sans-serif;background:var(--bg);color:v
           <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:3px;">Trade Journal</div>
           <div style="font-size:12px;color:var(--muted);">Log every trade · track emotions · learn from mistakes</div>
         </div>
-        <button onclick="openJournalForm()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--navy);border:none;border-radius:12px;font-family:'Sora',sans-serif;font-size:11px;color:#fff;cursor:pointer;font-weight:500;">+ New Entry</button>
+        <button onclick="openJournalForm()" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--navy);border:none;border-radius:12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;color:#fff;cursor:pointer;font-weight:500;">+ New Entry</button>
       </div>
       <!-- Streak banner -->
       <div id="jStreakBanner" style="background:linear-gradient(135deg,rgba(70,201,138,0.08),rgba(232,188,105,0.08));border:1px solid rgba(70,201,138,0.2);border-radius:16px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;">
@@ -2106,28 +2114,24 @@ function calcScore(dat) {
     confidence = Math.round(55 + (3.5 - Math.abs(rawScore)) / 3.5 * 20);
   }
   confidence = Math.max(50, Math.min(95, confidence));
-  // ATR-based risk — same formula as the PRD spec
-  // risk = 1.5 x ATR, target = price +/- (reward multiplier x risk)
+  // ATR-based targets — no fixed percentages
   var atr = dat.atr || dat.price * 0.015;
-  var risk = atr * 1.5;
-  var atrSL = risk;  // SL = 1.5 x ATR from entry
+  var riskAmt = atr * 1.5;
+  var atrSL = riskAmt;
   var entry = Math.round(dat.price);
   var target, stopLoss, horizon;
   if (signal === 'BUY') {
     stopLoss = Math.round(dat.price - atrSL);
-    // Reward multiplier scales with conviction: strong=3x, medium=2x, weak=1.5x
     var rewardMult = rawScore >= 7 ? 3.0 : rawScore >= 5 ? 2.0 : 1.5;
-    target = Math.round(dat.price + (risk * rewardMult));
+    target = Math.round(dat.price + (riskAmt * rewardMult));
     horizon = rawScore >= 7 ? 'Positional (1-3 months)' : rawScore >= 5 ? 'Swing (3-10 days)' : 'Intraday';
   } else if (signal === 'SELL') {
     stopLoss = Math.round(dat.price + atrSL);
-    // SELL target: price falls by 2x risk (2:1 reward)
-    target = Math.round(dat.price - (risk * 2.0));
+    target = Math.round(dat.price - (riskAmt * 2.0));
     horizon = 'Swing (3-7 days)';
   } else {
     stopLoss = Math.round(dat.price - atrSL);
-    // HOLD: watching for breakout — 1x risk as reference target
-    target = Math.round(dat.price + risk);
+    target = Math.round(dat.price + riskAmt);
     horizon = 'Watch - no clear setup';
   }
   var reward = Math.abs(target - entry);
@@ -2361,7 +2365,7 @@ function fP(f,btn){
   list.forEach(function(p,i){
     var sig=p.signal,d=p.data,ci=i%4,bc=sig.signal==='BUY'?'pbuy':sig.signal==='SELL'?'psell':'phold';
     var ret=((sig.target-sig.entry)/sig.entry*100).toFixed(1),rc=sig.signal==='BUY'?'var(--emerald)':sig.signal==='SELL'?'var(--sell)':'#B8922A';
-    var card=document.createElement('div');card.className='rpt-card';
+    var card=document.createElement('div');card.className='rpt-card';card.setAttribute('data-signal',sig.signal);
     card.innerHTML='<div class="rpt-hdr"><div class="rpt-ico" style="background:'+IC[ci]+';color:'+IT[ci]+';">'+ICN[p.sym]+'</div><div><div style="font-size:15px;font-weight:500;color:var(--ink);">'+NM[p.sym]+' <span class="pbadge '+bc+'" style="margin-left:6px;">'+sig.signal+'</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px;">'+SEC[p.sym]+' | '+sig.horizon+'</div></div><div style="margin-left:auto;text-align:right;"><div style="font-family:JetBrains Mono,monospace;font-size:19px;font-weight:500;color:var(--navy);">Rs.'+d.price.toFixed(0)+'</div><div style="font-family:JetBrains Mono,monospace;font-size:11px;color:'+(d.chg>=0?'var(--emerald)':'var(--sell)')+';margin-top:1px;">'+(d.chg>=0?'+':'')+d.chg.toFixed(2)+'%</div></div></div><div class="rpt-grid"><div class="rm"><div class="rm-l">Entry</div><div class="rm-v">Rs.'+sig.entry+'</div></div><div class="rm"><div class="rm-l">Target</div><div class="rm-v" style="color:var(--emerald);">Rs.'+sig.target+'</div></div><div class="rm"><div class="rm-l">Stop</div><div class="rm-v" style="color:var(--sell);">Rs.'+sig.stopLoss+'</div></div><div class="rm"><div class="rm-l">Return</div><div class="rm-v" style="color:'+rc+';">'+(parseFloat(ret)>0?'+':'')+ret+'%</div></div><div class="rm"><div class="rm-l">Confidence</div><div class="rm-v" style="color:'+rc+';">'+sig.confidence+'%</div></div></div><div class="ai-box"><b>Samridhi AI:</b> '+sig.reason+'</div>';
     el.appendChild(card);
   });
@@ -2369,13 +2373,25 @@ function fP(f,btn){
 
 function rReports(){
   var el=document.getElementById('reports');if(!el)return;el.innerHTML='';
-  if(!PK.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div>Run a scan first</div>';return;}
-  PK.forEach(function(p,i){
+  var allSigs=ST.filter(function(s){return SG[s]&&SD[s];}).map(function(s){return{sym:s,signal:SG[s],data:SD[s]};});
+  if(!allSigs.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#128203;</div>Run a scan first</div>';return;}
+  allSigs.sort(function(a,b){return b.signal.confidence-a.signal.confidence;});
+  allSigs.forEach(function(p,i){
     var sig=p.signal,d=p.data,ci=i%4,bc=sig.signal==='BUY'?'pbuy':sig.signal==='SELL'?'psell':'phold';
     var ret=((sig.target-sig.entry)/sig.entry*100).toFixed(1),rc=sig.signal==='BUY'?'var(--emerald)':sig.signal==='SELL'?'var(--sell)':'#B8922A';
     var card=document.createElement('div');card.className='rpt-card';
     card.innerHTML='<div class="rpt-hdr"><div class="rpt-ico" style="background:'+IC[ci]+';color:'+IT[ci]+';">'+ICN[p.sym]+'</div><div><div style="font-size:15px;font-weight:500;color:var(--navy);">'+NM[p.sym]+' <span class="pbadge '+bc+'">'+sig.signal+'</span>'+(d.isLive?'<span class="live-tag" style="margin-left:4px;">Live</span>':'')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">NSE:'+p.sym+' | '+SEC[p.sym]+' | '+sig.horizon+'</div></div><div style="margin-left:auto;text-align:right;"><div style="font-family:JetBrains Mono,monospace;font-size:20px;font-weight:500;">Rs.'+d.price.toFixed(0)+'</div><div style="font-family:JetBrains Mono,monospace;font-size:11px;color:'+(d.chg>=0?'var(--emerald)':'var(--sell)')+';margin-top:2px;">'+(d.chg>=0?'+':'')+d.chg.toFixed(2)+'%</div></div></div><div class="rpt-grid"><div class="rm"><div class="rm-l">RSI</div><div class="rm-v" style="color:'+(d.rsi<35||d.rsi>65?'var(--sell)':'var(--emerald)')+';">'+d.rsi.toFixed(1)+'</div></div><div class="rm"><div class="rm-l">MACD</div><div class="rm-v" style="color:'+(d.macd.bull?'var(--emerald)':'var(--sell)')+';">'+(d.macd.bull?'Bull':'Bear')+'</div></div><div class="rm"><div class="rm-l">50 DMA</div><div class="rm-v">Rs.'+d.sma50.toFixed(0)+'</div></div><div class="rm"><div class="rm-l">Entry</div><div class="rm-v">Rs.'+sig.entry+'</div></div><div class="rm"><div class="rm-l">Target</div><div class="rm-v" style="color:var(--emerald);">Rs.'+sig.target+'</div></div><div class="rm"><div class="rm-l">Stop</div><div class="rm-v" style="color:var(--sell);">Rs.'+sig.stopLoss+'</div></div><div class="rm"><div class="rm-l">Return</div><div class="rm-v" style="color:'+rc+';">'+(parseFloat(ret)>0?'+':'')+ret+'%</div></div><div class="rm"><div class="rm-l">R:R</div><div class="rm-v">'+sig.rr+':1</div></div><div class="rm"><div class="rm-l">Volume</div><div class="rm-v">'+d.volR.toFixed(1)+'x</div></div><div class="rm"><div class="rm-l">Confidence</div><div class="rm-v" style="color:'+rc+';">'+sig.confidence+'%</div></div></div><div class="ai-box"><b>Samridhi AI:</b> '+sig.reason+'</div>';
     el.appendChild(card);
+  });
+}
+
+function filterReports(f, btn){
+  document.querySelectorAll('#rptFilters .htab').forEach(function(b){b.classList.remove('on');});
+  if(btn) btn.classList.add('on');
+  var cards = document.querySelectorAll('#reports .rpt-card');
+  cards.forEach(function(card){
+    var sig = card.getAttribute('data-signal');
+    card.style.display = (f==='all' || sig===f) ? '' : 'none';
   });
 }
 
@@ -2657,8 +2673,8 @@ rWLFull=function(){
 var SIG_TAB='intraday', SIG_FILTER='ALL';
 var TAB_DESC={
   intraday:{icon:'',title:'Intraday Signals',desc:'Buy & sell within the same trading day. Best during <b>9:15 AM  2:30 PM</b>. Quick exits, 13% targets.'},
-  swing:{icon:'',title:'Swing Trade Signals',desc:'Hold for <b>310 days</b> to capture medium-term moves. 38% targets. Ideal for working professionals.'},
-  positional:{icon:'',title:'Positional Signals',desc:'Long-term holds of <b>13 months</b> for big moves. 820% targets. Lower frequency, higher patience.'}
+  swing:{icon:'',title:'Swing Trade Signals',desc:'Hold for <b>3-10 days</b> to capture medium-term moves. 3-8% targets. Ideal for working professionals.'},
+  positional:{icon:'',title:'Positional Signals',desc:'Long-term holds of <b>1-3 months</b> for big moves. 8-20% targets. Lower frequency, higher patience.'}
 };
 
 function switchSigTab(tab,el){
@@ -2678,11 +2694,12 @@ function sfFilter(mode,el){
 }
 
 function getSigTimeframe(sig,data){
-  // Classify based on R:R, horizon hint, and confidence
+  // Classify based on horizon string set by calcScore
   var horizon=(sig.horizon||'').toLowerCase();
-  if(horizon.indexOf('intra')>-1||horizon.indexOf('day')>-1) return 'intraday';
-  if(horizon.indexOf('positional')>-1||horizon.indexOf('long')>-1||horizon.indexOf('month')>-1) return 'positional';
-  if(horizon.indexOf('swing')>-1||horizon.indexOf('week')>-1||horizon.indexOf('short')>-1) return 'swing';
+  if(horizon.indexOf('positional')>-1||horizon.indexOf('month')>-1) return 'positional';
+  if(horizon.indexOf('swing')>-1||horizon.indexOf('3-10')>-1||horizon.indexOf('3-7')>-1) return 'swing';
+  if(horizon.indexOf('intra')>-1) return 'intraday';
+  if(horizon.indexOf('watch')>-1) return 'swing'; // HOLD signals go to swing tab
   // auto-classify by return size
   var ret=Math.abs((sig.target-sig.entry)/sig.entry*100);
   if(ret<3) return 'intraday';
@@ -3880,11 +3897,11 @@ window.addEventListener('load', function(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <div>
         <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Date</label>
-        <input type="date" id="jDate" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+        <input type="date" id="jDate" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
       </div>
       <div>
         <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Stock</label>
-        <select id="jSym" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+        <select id="jSym" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
           <option value="">-- Select --</option>
         </select>
       </div>
@@ -3892,7 +3909,7 @@ window.addEventListener('load', function(){
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
       <div>
         <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Action</label>
-        <select id="jAction" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+        <select id="jAction" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
           <option value="BUY">BUY</option><option value="SELL">SELL</option>
         </select>
       </div>
@@ -3921,7 +3938,7 @@ window.addEventListener('load', function(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <div>
         <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Setup / Strategy</label>
-        <select id="jSetup" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+        <select id="jSetup" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
           <option value="Breakout">Breakout</option>
           <option value="Pullback">Pullback</option>
           <option value="RSI Reversal">RSI Reversal</option>
@@ -3934,7 +3951,7 @@ window.addEventListener('load', function(){
       </div>
       <div>
         <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Outcome</label>
-        <select id="jOutcome" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;">
+        <select id="jOutcome" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;">
           <option value="Win">✅ Win</option>
           <option value="Loss">❌ Loss</option>
           <option value="Breakeven">➖ Breakeven</option>
@@ -3944,15 +3961,15 @@ window.addEventListener('load', function(){
     </div>
     <div style="margin-bottom:12px;">
       <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Trade Reasoning</label>
-      <textarea id="jReason" rows="2" placeholder="Why did you enter this trade? What signals confirmed it?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;resize:vertical;"></textarea>
+      <textarea id="jReason" rows="2" placeholder="Why did you enter this trade? What signals confirmed it?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;resize:vertical;"></textarea>
     </div>
     <div style="margin-bottom:18px;">
       <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;display:block;margin-bottom:4px;">Lesson Learned</label>
-      <textarea id="jLesson" rows="2" placeholder="What would you do differently? What did this trade teach you?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;resize:vertical;"></textarea>
+      <textarea id="jLesson" rows="2" placeholder="What would you do differently? What did this trade teach you?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;resize:vertical;"></textarea>
     </div>
     <div style="display:flex;gap:10px;">
-      <button onclick="closeJournalForm()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">Cancel</button>
-      <button onclick="saveJournalEntry()" style="flex:2;padding:11px;border-radius:12px;background:var(--navy);border:none;font-family:'Sora',sans-serif;font-size:12px;color:#fff;cursor:pointer;font-weight:600;">Save Entry</button>
+      <button onclick="closeJournalForm()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">Cancel</button>
+      <button onclick="saveJournalEntry()" style="flex:2;padding:11px;border-radius:12px;background:var(--navy);border:none;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:#fff;cursor:pointer;font-weight:600;">Save Entry</button>
     </div>
   </div>
 </div>
@@ -3993,9 +4010,9 @@ window.addEventListener('load', function(){
     <!-- Comment -->
     <div style="margin-bottom:20px;">
       <div style="font-size:11px;color:var(--muted);font-family:'Inter',sans-serif;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Your thoughts</div>
-      <textarea id="fbComment" placeholder="What's working well? What could be better?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'Sora',sans-serif;font-size:12px;color:var(--ink);outline:none;resize:none;height:80px;"></textarea>
+      <textarea id="fbComment" placeholder="What's working well? What could be better?" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;color:var(--ink);outline:none;resize:none;height:80px;"></textarea>
     </div>
-    <button onclick="submitFeedback()" style="width:100%;padding:13px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Send Feedback ✦</button>
+    <button onclick="submitFeedback()" style="width:100%;padding:13px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Send Feedback ✦</button>
     <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:10px;">Feedback is stored locally · Helps improve Samridhi AI</div>
   </div>
 </div>
@@ -4036,8 +4053,8 @@ window.addEventListener('load', function(){
       </div>
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="copyShareText()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;">📋 Copy Text</button>
-      <button onclick="closeShare()" style="flex:1;padding:11px;border-radius:12px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">✓ Done</button>
+      <button onclick="copyShareText()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;cursor:pointer;">📋 Copy Text</button>
+      <button onclick="closeShare()" style="flex:1;padding:11px;border-radius:12px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">✓ Done</button>
     </div>
   </div>
 </div>
@@ -4051,10 +4068,10 @@ window.addEventListener('load', function(){
     <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy);text-align:center;margin-bottom:8px;" id="onboardTitle"></div>
     <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;margin-bottom:24px;" id="onboardDesc"></div>
     <div style="display:flex;gap:10px;">
-      <button onclick="onboardPrev()" id="onboardPrevBtn" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;display:none;">← Back</button>
-      <button onclick="onboardNext()" id="onboardNextBtn" style="flex:2;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Next -></button>
+      <button onclick="onboardPrev()" id="onboardPrevBtn" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;cursor:pointer;display:none;">← Back</button>
+      <button onclick="onboardNext()" id="onboardNextBtn" style="flex:2;padding:12px;border-radius:14px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Next -></button>
     </div>
-    <div style="text-align:center;margin-top:10px;"><button onclick="skipOnboard()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;">Skip tour</button></div>
+    <div style="text-align:center;margin-top:10px;"><button onclick="skipOnboard()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">Skip tour</button></div>
   </div>
 </div>
 
@@ -4081,7 +4098,7 @@ window.addEventListener('load', function(){
     </div>
   </div>
   <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
-    <input id="aiChatInput" type="text" placeholder="Ask about any stock or strategy…" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',sans-serif;font-size:11px;color:var(--ink);outline:none;" onkeydown="if(event.key==='Enter')sendAIChat()">
+    <input id="aiChatInput" type="text" placeholder="Ask about any stock or strategy…" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;color:var(--ink);outline:none;" onkeydown="if(event.key==='Enter')sendAIChat()">
     <button onclick="sendAIChat()" style="padding:9px 14px;border-radius:10px;background:var(--navy);border:none;color:#fff;font-size:13px;cursor:pointer;">↑</button>
   </div>
 </div>
@@ -4489,7 +4506,7 @@ async function sendAIChat(){
 <style>
 .j-emo{display:inline-flex;align-items:center;padding:5px 11px;border-radius:20px;background:var(--bg);border:1px solid var(--border);font-size:11px;cursor:pointer;transition:all 0.15s;}
 .j-emo:hover,.j-emo.on{background:rgba(215,165,142,0.12);border-color:rgba(215,165,142,0.4);color:var(--ink);}
-.aicq{font-size:10px;padding:5px 11px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.15s;font-family:'Sora',sans-serif;}
+.aicq{font-size:10px;padding:5px 11px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.15s;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
 .aicq:hover{background:rgba(70,201,138,0.06);border-color:rgba(70,201,138,0.25);color:var(--emerald);}
 
 /* ══ PHASE 8: SCREENER ══ */
@@ -4498,7 +4515,7 @@ async function sendAIChat(){
 .scr-fblock{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:12px 14px;}
 .scr-flbl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'Inter',sans-serif;margin-bottom:8px;}
 .scr-options{display:flex;flex-wrap:wrap;gap:5px;}
-.scr-opt{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.scr-opt{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;transition:all 0.15s;}
 .scr-opt:hover{border-color:var(--rose);color:var(--rose);}
 .scr-opt.on{background:rgba(70,201,138,0.08);border-color:rgba(70,201,138,0.3);color:var(--emerald);font-weight:500;}
 .scr-view-btn{font-size:11px;padding:5px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.15s;}
@@ -4533,7 +4550,7 @@ async function sendAIChat(){
 .scr-stat-pill-lbl{font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;}
 .scr-stat-pill-val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:500;}
 /* Watchlist add button inside screener */
-.scr-wl-btn{font-size:10px;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.scr-wl-btn{font-size:10px;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;transition:all 0.15s;}
 .scr-wl-btn:hover{background:rgba(70,201,138,0.08);border-color:rgba(70,201,138,0.3);color:var(--emerald);}
 
 </style>
@@ -6074,7 +6091,7 @@ window.addEventListener('load', function() {
 #feedbackBubble:hover{transform:scale(1.1);}
 .fb-star{font-size:22px;cursor:pointer;opacity:0.35;transition:opacity 0.15s;user-select:none;}
 .fb-star.on{opacity:1;}
-.fb-cat{font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.fb-cat{font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;transition:all 0.15s;}
 .fb-cat.on{background:rgba(24,34,53,0.08);border-color:var(--navy);color:var(--navy);font-weight:500;}
 /* Onboarding dots */
 .ob-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all 0.2s;}
