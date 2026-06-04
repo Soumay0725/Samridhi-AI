@@ -119,21 +119,21 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 .skel-line{height:12px;margin-bottom:8px;border-radius:6px;}
 .skel-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
 /* ── Phase 16: Today's One Signal banner ── */
-.one-signal-banner{background:linear-gradient(135deg,var(--navy),#1E2D47);border-radius:20px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden;animation:fadeUp 0.4s ease both;}
-.one-signal-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(70,201,138,0.06);}
-.osb-eyebrow{font-size:9px;letter-spacing:2.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;font-family:'Inter',sans-serif;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.one-signal-banner{background:linear-gradient(135deg,rgba(215,165,142,0.18),rgba(232,188,105,0.12));border:1px solid rgba(215,165,142,0.3);border-radius:20px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden;animation:fadeUp 0.4s ease both;}
+.one-signal-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(232,188,105,0.08);}
+.osb-eyebrow{font-size:9px;letter-spacing:2.5px;color:var(--rose);text-transform:uppercase;font-family:'Inter',sans-serif;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
 .osb-pulse{width:5px;height:5px;border-radius:50%;background:var(--emerald);animation:pulse 1.5s infinite;flex-shrink:0;}
-.osb-stock{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1;}
-.osb-plain{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.5;margin-bottom:14px;font-weight:300;}
+.osb-stock{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--navy);margin-bottom:4px;line-height:1;}
+.osb-plain{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;font-weight:300;}
 .osb-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.osb-price{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:8px 14px;text-align:center;}
-.osb-price-lbl{font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.5px;font-family:'Inter',sans-serif;margin-bottom:3px;}
-.osb-price-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#fff;}
+.osb-price{background:rgba(255,255,255,0.7);border:1px solid rgba(215,165,142,0.25);border-radius:10px;padding:8px 14px;text-align:center;}
+.osb-price-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-family:'Inter',sans-serif;margin-bottom:3px;}
+.osb-price-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--navy);}
 .osb-badge{border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;}
-.osb-buy{background:rgba(70,201,138,0.15);border:1px solid rgba(70,201,138,0.3);color:var(--emerald);}
-.osb-sell{background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3);color:var(--sell);}
-.osb-hold{background:rgba(232,188,105,0.15);border:1px solid rgba(232,188,105,0.3);color:var(--gold);}
-.osb-conf{font-size:11px;color:rgba(255,255,255,0.5);margin-left:auto;font-family:'JetBrains Mono',monospace;}
+.osb-buy{background:rgba(70,201,138,0.1);border:1px solid rgba(70,201,138,0.3);color:var(--emerald);}
+.osb-sell{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);color:var(--sell);}
+.osb-hold{background:rgba(232,188,105,0.1);border:1px solid rgba(232,188,105,0.3);color:#B8922A;}
+.osb-conf{font-size:11px;color:var(--muted);margin-left:auto;font-family:'JetBrains Mono',monospace;}
 /* ── Phase 16: Market hours banner ── */
 .mh-banner{border-radius:14px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:500;}
 .mh-banner.premarket{background:rgba(232,188,105,0.08);border:1px solid rgba(232,188,105,0.2);color:#B8922A;}
@@ -371,6 +371,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 .dp-zone-sub{font-size:10px;margin-top:3px;font-weight:500;}
 /* Indicators grid */
 .dp-ind-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+@media(max-width:600px){.dp-ind-grid{grid-template-columns:repeat(3,1fr);}}
 .dp-ind{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
 .dp-ind-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-family:'Inter',sans-serif;margin-bottom:4px;}
 .dp-ind-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;}
@@ -546,7 +547,13 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
 /* ══ PHASE 15: MOBILE RESPONSIVE ══ */
 /* Mobile bottom nav */
-.mob-nav{display:none;}
+.mob-nav{display:none !important;}
+.mob-more-menu{display:none !important;}
+@media(max-width:768px){
+  .mob-nav{display:flex !important;}
+  .mob-more-menu{display:none;}
+  .mob-more-menu.open{display:grid !important;}
+}
 
 @media(max-width:768px){
   /* Shell -- single column, no sidebar */
@@ -643,7 +650,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <input class="s-inp" id="groqKey" type="text" placeholder="gsk_..." autocomplete="off">
     <div class="cap-step">
       <label class="s-lbl">Trading Capital (₹) <span style="background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.2);border-radius:20px;padding:1px 8px;font-size:9px;letter-spacing:.5px;margin-left:4px;">ONLY IF TRADING</span></label>
-      <input class="s-inp" id="setupCapital" type="number" placeholder="Optional — for position sizing" min="1000" step="1000">
+      <input class="s-inp" id="setupCapital" type="number" min="1000" step="1000">
       <div class="cap-presets">
         <div class="cap-preset" onclick="setCapPreset(25000,this)">₹25K</div>
         <div class="cap-preset" onclick="setCapPreset(50000,this)">₹50K</div>
@@ -2292,9 +2299,84 @@ async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:Abort
 async function fetchYahoo(sym){
   try{
     var YAHOO_SYM_MAP={
+      // Stocks where default sym+.NS doesn't work or gives wrong prices
       'TATAMOTORS':'TATAMOTORS.NS','LT':'LT.NS','HINDUNILVR':'HINDUNILVR.NS',
       'BAJFINANCE':'BAJFINANCE.NS','ULTRACEMCO':'ULTRACEMCO.NS','BHARTIARTL':'BHARTIARTL.NS',
-      'KOTAKBANK':'KOTAKBANK.NS','ASIANPAINT':'ASIANPAINT.NS','AXISBANK':'AXISBANK.NS'
+      'KOTAKBANK':'KOTAKBANK.NS','ASIANPAINT':'ASIANPAINT.NS','AXISBANK':'AXISBANK.NS',
+      // Hyphenated symbols
+      'BAJAJ-AUTO':'BAJAJ-AUTO.NS',
+      // Stocks with known Yahoo mapping issues — use BSE or alternate
+      'GREENKO':'GREENK.BO',
+      'GTL':'GTL.BO',
+      'GTLINFRA':'GTLINFRA.BO',
+      'SITI':'SITI.BO',
+      'DIGI':'DIGI.BO',
+      'HEALTHCARE':'HCGN.BO',
+      'VIJAYA':'VIJAYABANK.BO',
+      'NAZARA':'NAZARA.BO',
+      'LALPATHLAB':'LALPATHLAB.NS',
+      'MAPMYINDIA':'MAPMYINDIA.NS',
+      'POLICYBZR':'POLICYBZR.NS',
+      'PAYTM':'PAYTM.NS',
+      'NYKAA':'NYKAA.NS',
+      'DELHIVERY':'DELHIVERY.NS',
+      'CARTRADE':'CARTRADE.NS',
+      'SJVN':'SJVN.NS',
+      'GREENKO':'GREENKO.BO',
+      'IPCALAB':'IPCA.NS',
+      'STAR':'STARHEALTH.NS',
+      'ASTRAZEN':'ASTRAZEN.NS',
+      'FSL':'FSL.NS',
+      'CRAFTSMAN':'CRAFTSMAN.NS',
+      'TIINDIA':'TIINDIA.NS',
+      'HEIDELBERG':'HEIDELBERG.NS',
+      'BIRLACORPN':'BIRLACORPN.NS',
+      'KALPATPOWR':'KALPATPOWR.NS',
+      'APLAPOLLO':'APLAPOLLO.NS',
+      'JINDALSAW':'JINDALSAW.NS',
+      'MAHLIFE':'MAHLIFE.NS',
+      'KOLTEPATIL':'KOLTEPATIL.NS',
+      'SUNTECK':'SUNTECK.NS',
+      'NETWORK18':'NETWORK18.NS',
+      'STLTECH':'STLTECH.NS',
+      'INDUSTOWER':'INDUSTOWER.NS',
+      'HATHWAY':'HATHWAY.NS',
+      'ALEMBICPHARM':'ALEMBICPHARM.NS',
+      'LAURUSLABS':'LAURUSLABS.NS',
+      'SYNGENE':'SYNGENE.NS',
+      'AJANTPHARM':'AJANTPHARM.NS',
+      'NATCOPHARM':'NATCOPHARM.NS',
+      'GRANULES':'GRANULES.NS',
+      'THYROCARE':'THYROCARE.NS',
+      'KIMS':'KIMSHEALTH.NS',
+      'MEDPLUS':'MEDPLUS.NS',
+      'ASTER':'ASTERDM.NS',
+      'FORTIS':'FORTIS.NS',
+      'MAXHEALTH':'MAXHEALTH.NS',
+      'RADICO':'RADICO.NS',
+      'UNITDSPR':'MCDOWELL-N.NS',
+      'BAJAJCON':'BAJAJCON.NS',
+      'CROMPTON':'CROMPTON.NS',
+      'KAJARIACER':'KAJARIACER.NS',
+      'ORIENTELEC':'ORIENTELEC.NS',
+      'BLUESTARCO':'BLUESTARCO.NS',
+      'JSWENERGY':'JSWENERGY.NS',
+      'RPOWER':'RPOWER.NS',
+      'NHPC':'NHPC.NS',
+      'CONCOR':'CONCOR.NS',
+      'CASTROLIND':'CASTROLIND.NS',
+      'GULFOILLUB':'GULFOILLUB.NS',
+      'NATIONALUM':'NATIONALUM.NS',
+      'HINDCOPPER':'HINDCOPPER.NS',
+      'MAHABANK':'MAHABANK.NS',
+      'RBLBANK':'RBLBANK.NS',
+      'IDFCFIRSTB':'IDFCFIRSTB.NS',
+      'BANDHANBNK':'BANDHANBNK.NS',
+      'SHRIRAMFIN':'SHRIRAMFIN.NS',
+      'PIRAMALENT':'PIRAMALENT.NS',
+      'MANAPPURAM':'MANAPPURAM.NS',
+      'CHOLAFIN':'CHOLAFIN.NS',
+      'LICIHSGFIN':'LICIHSGFIN.NS'
     };
     var ySym = YAHOO_SYM_MAP[sym] || (sym+'.NS');
     // Fetch 1 year of daily data -- enough for real SMA200, MACD, Volume
@@ -2318,12 +2400,14 @@ async function fetchYahoo(sym){
     var high=meta.regularMarketDayHigh||price*1.01;
     var low=meta.regularMarketDayLow||price*0.99;
 
-    // Extract full closes and volumes from 1 year of history
-    var closes=[], volumes=[];
+    // Extract full OHLCV from 1 year of history
+    var closes=[], volumes=[], highs=[], lows=[];
     if(res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
       var q=res.indicators.quote[0];
-      if(q.close) closes=q.close.filter(function(v){return v!=null&&v>0;}).map(function(v){return parseFloat(v.toFixed(2));});
-      if(q.volume) volumes=q.volume.filter(function(v){return v!=null&&v>0;});
+      if(q.close)  closes  = q.close.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
+      if(q.volume) volumes = q.volume.map(function(v){return (v!=null&&v>0)?v:null;}).filter(Boolean);
+      if(q.high)   highs   = q.high.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
+      if(q.low)    lows    = q.low.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
     }
     // Ensure last close = current price
     if(closes.length>0) closes[closes.length-1]=price;
@@ -2386,10 +2470,39 @@ async function fetchYahoo(sym){
     }
     volR=Math.max(0.1,Math.min(5,volR));
 
-    var atr=Math.abs(high-low)||price*0.012;
+    // == REAL ATR (14-period True Range average) ==
+    var atr = price * 0.012; // default fallback
+    if(highs.length>=14 && lows.length>=14 && closes.length>=15){
+      var trValues=[];
+      for(var i=1;i<highs.length&&i<lows.length&&i<closes.length;i++){
+        var prevClose=closes[i-1];
+        var tr=Math.max(
+          highs[i]-lows[i],
+          Math.abs(highs[i]-prevClose),
+          Math.abs(lows[i]-prevClose)
+        );
+        trValues.push(tr);
+      }
+      if(trValues.length>=14){
+        // Wilder smoothing for ATR
+        var atrVal=trValues.slice(0,14).reduce(function(a,b){return a+b;},0)/14;
+        for(var j=14;j<trValues.length;j++) atrVal=(atrVal*13+trValues[j])/14;
+        atr=parseFloat(atrVal.toFixed(2));
+      }
+    }
+
+    // Use real intraday high/low if available, else use day range from ATR
+    var realHigh = (meta.regularMarketDayHigh&&meta.regularMarketDayHigh>0) ? meta.regularMarketDayHigh : (highs.length>0?highs[highs.length-1]:price+atr*0.5);
+    var realLow  = (meta.regularMarketDayLow&&meta.regularMarketDayLow>0)  ? meta.regularMarketDayLow  : (lows.length>0?lows[lows.length-1]:price-atr*0.5);
+
+    // 52-week high/low from real data
+    var w52High = highs.length>0 ? Math.max.apply(null,highs) : price*1.3;
+    var w52Low  = lows.length>0  ? Math.min.apply(null,lows)  : price*0.7;
+
     return{
       sym:sym, price:parseFloat(price.toFixed(2)), prev:parseFloat(prev.toFixed(2)),
-      chg:chg, high:parseFloat(high.toFixed(2)), low:parseFloat(low.toFixed(2)),
+      chg:chg, high:parseFloat(realHigh.toFixed(2)), low:parseFloat(realLow.toFixed(2)),
+      w52High:parseFloat(w52High.toFixed(2)), w52Low:parseFloat(w52Low.toFixed(2)),
       volR:volR, atr:parseFloat(atr.toFixed(2)), closes:closes,
       isLive:true, isYahoo:true,
       rsi:rsi, macd:{bull:macdBull},
@@ -3027,7 +3140,11 @@ function buildIndicators(sym,d,sig){
     {lbl:'50 DMA',val:'Rs.'+d.sma50.toFixed(0),cls:aboveSMA50?'bull':'bear',bar:aboveSMA50?70:30,barColor:aboveSMA50?'var(--emerald)':'var(--sell)'},
     {lbl:'200 DMA',val:'Rs.'+d.sma200.toFixed(0),cls:aboveSMA200?'bull':'bear',bar:aboveSMA200?75:25,barColor:aboveSMA200?'var(--emerald)':'var(--sell)'},
     {lbl:'Volume',val:d.volR.toFixed(1)+'x avg',cls:volHigh?'bull':'neut',bar:Math.min(100,d.volR*50),barColor:volHigh?'var(--emerald)':'#B8922A'},
-    {lbl:'ATR',val:'Rs.'+atr.toFixed(0),cls:'neut',bar:50,barColor:'#B8922A'},
+    {lbl:'ATR (14d)',val:'Rs.'+atr.toFixed(0),cls:'neut',bar:Math.min(100,atr/d.price*1000),barColor:'#B8922A'},
+    {lbl:'Day High',val:'Rs.'+(d.high||d.price).toFixed(0),cls:'bull',bar:75,barColor:'var(--emerald)'},
+    {lbl:'Day Low',val:'Rs.'+(d.low||d.price).toFixed(0),cls:'bear',bar:30,barColor:'var(--sell)'},
+    {lbl:'52W High',val:d.w52High?'Rs.'+d.w52High.toFixed(0):'--',cls:'bull',bar:d.w52High?Math.min(100,d.price/d.w52High*100):50,barColor:'var(--emerald)'},
+    {lbl:'52W Low',val:d.w52Low?'Rs.'+d.w52Low.toFixed(0):'--',cls:'neut',bar:d.w52Low&&d.w52High?Math.min(100,(d.price-d.w52Low)/(d.w52High-d.w52Low)*100):50,barColor:'#B8922A'},
     {lbl:'BB Position',val:bb_pos.toFixed(0)+'%',cls:bb_pos<30?'bull':bb_pos>70?'bear':'neut',bar:bb_pos,barColor:bb_pos<30?'var(--emerald)':bb_pos>70?'var(--sell)':'#B8922A'},
     {lbl:'Momentum',val:momentum?'Positive':'Negative',cls:momentum?'bull':'bear',bar:momentum?65:35,barColor:momentum?'var(--emerald)':'var(--sell)'},
   ];
