@@ -67,16 +67,6 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
 /* ══ PHASE 18: REAL-TIME DATA + TRUST DASHBOARD ══ */
 
-/* Upstox connect button */
-.upstox-connect-btn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#6B3FA0,#4B2882);border:none;border-radius:14px;padding:12px 20px;color:#fff;font-family:'Sora',-apple-system,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;}
-.upstox-connect-btn:hover{opacity:0.9;transform:translateY(-1px);}
-.upstox-connect-btn.connected{background:linear-gradient(135deg,rgba(70,201,138,0.12),rgba(70,201,138,0.06));border:1px solid rgba(70,201,138,0.3);color:var(--emerald);}
-.upstox-status{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:8px;color:var(--muted);}
-.upstox-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.upstox-status-dot.live{background:var(--emerald);animation:pulse 1.5s infinite;}
-.upstox-status-dot.delayed{background:#B8922A;}
-.upstox-status-dot.disconnected{background:var(--sell);}
-
 /* Trust Score */
 .trust-score-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:20px;}
 .trust-ring{width:72px;height:72px;flex-shrink:0;position:relative;}
@@ -111,12 +101,6 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 .plain-mood.neutral{background:rgba(232,188,105,0.05);border-color:rgba(232,188,105,0.2);color:var(--navy);}
 .plain-mood-icon{font-size:16px;margin-right:8px;}
 
-/* Data quality badge in topbar */
-.data-badge{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.5px;font-family:'Inter',sans-serif;}
-.data-badge.live{background:rgba(70,201,138,0.1);border:1px solid rgba(70,201,138,0.25);color:var(--emerald);}
-.data-badge.delayed{background:rgba(232,188,105,0.1);border:1px solid rgba(232,188,105,0.25);color:#B8922A;}
-.data-badge-dot{width:4px;height:4px;border-radius:50%;background:currentColor;}
-.data-badge.live .data-badge-dot{animation:pulse 1.5s infinite;}
 
 /* Capital setup step in launch screen */
 .cap-step{margin-top:14px;}
@@ -699,10 +683,9 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <input class="s-inp" id="uname" type="text" placeholder="e.g. Soumay" maxlength="20">
     <label class="s-lbl">Groq API Key</label>
     <input class="s-inp" id="groqKey" type="text" placeholder="gsk_..." autocomplete="off">
-    <label class="s-lbl">Upstox API Key <span style="background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.2);border-radius:20px;padding:1px 8px;font-size:9px;letter-spacing:.5px;margin-left:4px;">LIVE PRICES</span></label>
-    <input class="s-inp" id="setupUpstoxKey" type="text" placeholder="For real-time NSE prices" autocomplete="off">
+
     <button class="s-btn" id="launchBtn">✦ Launch Samridhi AI</button>
-    <div class="s-note">Credentials stored only in your browser · Capital can be set inside the app</div>
+    <div class="s-note">Credentials stored only in your browser</div>
   </div>
 </div>
 
@@ -734,11 +717,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div class="idx"><span class="idx-n">NIFTY 50</span>&nbsp;<span class="idx-v" id="nV">-</span><span id="nC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="idx"><span class="idx-n">SENSEX</span>&nbsp;<span class="idx-v" id="sV">-</span><span id="sC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="bell">&#128276;<div class="bell-dot"></div></div>
-      <!-- Phase 18: Data quality badge -->
-      <div class="data-badge delayed" id="dataBadge">
-        <div class="data-badge-dot"></div>
-        <span id="dataBadgeText">DELAYED</span>
-      </div>
+
       <!-- Phase 17A: Capital pill -->
       <div class="cap-pill" id="capPill" onclick="openCapModal()" title="Your trading capital — click to update">
         <span class="cap-pill-lbl">Capital</span>
@@ -1904,24 +1883,6 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
     <div class="page" id="page-settings">
       <div style="margin-bottom:18px;"><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);">Settings</div></div>
-
-      <!-- Phase 18: Upstox Connection -->
-      <div class="scard" style="margin-bottom:14px;">
-        <div class="sc-h"><div class="sc-t">📡 Live Data — Upstox</div></div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.6;">Connect your Upstox account for real-time NSE prices. One-time setup. Reconnect once daily during market hours.</div>
-        <div style="margin-bottom:10px;">
-          <label class="s-lbl">Upstox API Key</label>
-          <input class="s-inp2" id="sUpstoxKey" placeholder="Enter your Upstox API key" autocomplete="off">
-        </div>
-        <button class="upstox-connect-btn" id="upstoxConnectBtn" onclick="p18ConnectUpstox()">
-          <span id="upstoxBtnIcon">⚡</span>
-          <span id="upstoxBtnText">Connect Upstox for Live Prices</span>
-        </button>
-        <div class="upstox-status" id="upstoxStatus">
-          <div class="upstox-status-dot disconnected" id="upstoxStatusDot"></div>
-          <span id="upstoxStatusText">Not connected — using Yahoo Finance (15-min delayed)</span>
-        </div>
-      </div>
 
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
@@ -7649,15 +7610,13 @@ function dttExit() {
   toast('Smart move. Capital preserved for better opportunities ahead. 🛡', 'ok');
 }
 
-// ── Hook into launchBtn — capture Upstox key + capital ──
+// ── Hook into launchBtn — capture capital ──
 (function(){
   var btn=document.getElementById('launchBtn');
   if(!btn)return;
   btn.addEventListener('click',function(){
     var capVal=parseFloat((document.getElementById('setupCapital')||{}).value);
     if(capVal&&capVal>=1000){USER_CAPITAL=capVal;try{localStorage.setItem('s_capital',capVal.toString());}catch(e){}}
-    var upKey=(document.getElementById('setupUpstoxKey')||{}).value||'';
-    if(upKey&&upKey.length>5){UPSTOX_API_KEY=upKey;try{localStorage.setItem('upstox_api_key',upKey);}catch(e){}}
   },true);
 })();
 
@@ -7711,77 +7670,30 @@ window.addEventListener('load', function() {
 });
 </script>
 
-<!-- ══ PHASE 18: REAL-TIME DATA + TRUST DASHBOARD ══ -->
+<!-- ══ PHASE 18: TRUST DASHBOARD + PERFORMANCE + PLAIN MOOD ══ -->
 <script>
-var UPSTOX_API_KEY='', UPSTOX_TOKEN=null, P18_DATA_SOURCE='delayed';
-
-function p18ConnectUpstox(){
-  var key=(document.getElementById('sUpstoxKey')||{}).value||'';
-  if(!key){try{key=localStorage.getItem('upstox_api_key')||'';}catch(e){}}
-  if(!key||key.length<5){toast('Enter your Upstox API Key first','err');return;}
-  UPSTOX_API_KEY=key;
-  try{localStorage.setItem('upstox_api_key',key);}catch(e){}
-  var redirectUri=encodeURIComponent('https://soumay0725.github.io/Samridhi-AI/');
-  var authUrl='https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id='+encodeURIComponent(key)+'&redirect_uri='+redirectUri;
-  toast('Redirecting to Upstox login...','ok');
-  setTimeout(function(){window.location.href=authUrl;},800);
-}
-
-function p18HandleOAuthCallback(){
-  var params=new URLSearchParams(window.location.search);
-  var code=params.get('code');
-  if(!code)return;
-  window.history.replaceState({},document.title,window.location.pathname);
-  // Store auth code — note: this is NOT yet an access token
-  // Token exchange requires a backend server (Phase 23)
-  // For now we store it and mark as "connecting" — badge shows LIVE only after verified API call
-  try{localStorage.setItem('upstox_code',code);localStorage.setItem('upstox_connected_at',Date.now().toString());}catch(e){}
-  UPSTOX_TOKEN=code;
-  P18_DATA_SOURCE='connecting'; // Not yet verified live
-  p18UpdateConnectionUI(false); // Keep badge as DELAYED until verified
-  toast('Upstox authorised — connect in Settings to activate live prices.','ok');
-}
-
-function p18UpdateConnectionUI(connected){
-  var btn=document.getElementById('upstoxConnectBtn');
-  var dot=document.getElementById('upstoxStatusDot');
-  var txt=document.getElementById('upstoxStatusText');
-  var badge=document.getElementById('dataBadge');
-  var badgeTxt=document.getElementById('dataBadgeText');
-  var btnTxt=document.getElementById('upstoxBtnText');
-  if(connected){
-    if(btn)btn.classList.add('connected');
-    if(btnTxt)btnTxt.textContent='✓ Upstox Authorised';
-    if(dot)dot.className='upstox-status-dot delayed';
-    if(txt)txt.textContent='Upstox authorised — live prices activate on next scan';
-    if(badge){badge.className='data-badge delayed';badgeTxt.textContent='AUTHORISED';}
-    P18_DATA_SOURCE='connecting';
-  } else {
-    if(btn)btn.classList.remove('connected');
-    if(btnTxt)btnTxt.textContent='Connect Upstox for Live Prices';
-    if(dot)dot.className='upstox-status-dot delayed';
-    if(txt)txt.textContent='Not connected — using Yahoo Finance (15-min delayed)';
-    if(badge){badge.className='data-badge delayed';badgeTxt.textContent='DELAYED';}
-    P18_DATA_SOURCE='delayed';
-  }
-}
+var P18_DATA_SOURCE='delayed';
 
 function p18CalcTrustScore(){
-  var score=0, reasons=[];
-  // Data quality (30pts)
+  var score=0,reasons=[];
   var liveCount=Object.values(SD).filter(function(d){return d&&(d.isYahoo||d.isLive);}).length;
-  // Data quality — based only on verified real prices from Yahoo/Upstox
-  var ds=Math.round((liveCount/Math.max(ST.length,1))*30);score+=ds;
-  reasons.push(liveCount+'/'+Math.max(ST.length,1)+' verified real prices');
-  // Win rate (25pts)
+  var ds=Math.round((liveCount/Math.max(ST.length,1))*30);
+  score+=ds;reasons.push(liveCount+'/'+Math.max(ST.length,1)+' verified real prices');
   var outcomes=[];try{outcomes=JSON.parse(localStorage.getItem('samridhi_outcomes')||'[]');}catch(e){}
   var recent=outcomes.filter(function(o){return o.ts&&Date.now()-o.ts<30*24*3600*1000;});
-  if(recent.length>=5){var wins=recent.filter(function(o){return o.result==='target';}).length;score+=Math.round((wins/recent.length)*25);reasons.push(Math.round(wins/recent.length*100)+'% win rate');}
-  else{reasons.push('Insufficient data for win rate (<5 outcomes)');} // No points without evidence
-  // Confidence quality (25pts)
+  if(recent.length>=5){
+    var wins=recent.filter(function(o){return o.result==='target';}).length;
+    score+=Math.round((wins/recent.length)*25);
+    reasons.push(Math.round(wins/recent.length*100)+'% win rate');
+  } else {
+    reasons.push('Insufficient data for win rate');
+  }
   var sigKeys=Object.keys(SG);
-  if(sigKeys.length>0){var ac=sigKeys.reduce(function(s,k){return s+(SG[k].confidence||0);},0)/sigKeys.length;score+=Math.max(0,Math.round(((ac-50)/50)*25));reasons.push('Avg conf '+Math.round(ac)+'%');}
-  // Scan freshness (20pts)
+  if(sigKeys.length>0){
+    var ac=sigKeys.reduce(function(s,k){return s+(SG[k].confidence||0);},0)/sigKeys.length;
+    score+=Math.max(0,Math.round(((ac-50)/50)*25));
+    reasons.push('Avg conf '+Math.round(ac)+'%');
+  }
   var ls=document.getElementById('lastSc');
   if(ls&&ls.textContent&&ls.textContent!=='--'){score+=20;reasons.push('Fresh scan');}
   return{score:Math.max(0,Math.min(100,score)),reasons:reasons};
@@ -7845,57 +7757,21 @@ function p18RenderPlainMood(mood){
   el.className=cls;iconEl.textContent=icon;txtEl.textContent=text;el.style.display='block';
 }
 
-function p18UpdateDataBadge(){
-  var lc=Object.values(SD).filter(function(d){return d&&(d.isYahoo||d.isLive);}).length;
-  var badge=document.getElementById('dataBadge'),bt=document.getElementById('dataBadgeText');
-  if(!badge)return;
-  // Only show LIVE when confirmed by successful Upstox API call — not just OAuth code
-  if(P18_DATA_SOURCE==='verified_live'){badge.className='data-badge live';bt.textContent='LIVE';}
-  else if(lc>ST.length*0.7){badge.className='data-badge delayed';bt.textContent=lc+'/'+ST.length+' REAL';}
-  else{badge.className='data-badge delayed';bt.textContent='DELAYED';}
-}
-
-// Hook into rAll
 var _p18OrigRAll=rAll;
 rAll=function(mood){
   _p18OrigRAll(mood);
   p18RenderPlainMood(mood);
-  p18UpdateDataBadge();
   setTimeout(function(){p18RenderTrustScore();p18RenderPerformance();},300);
 };
 
-// Hook into saveS
 var _p18OrigSaveS=saveS;
-saveS=function(){
-  _p18OrigSaveS();
-  var key=(document.getElementById('sUpstoxKey')||{}).value;
-  if(key&&key.length>5){UPSTOX_API_KEY=key;try{localStorage.setItem('upstox_api_key',key);}catch(e){}}
-};
+saveS=function(){ _p18OrigSaveS(); };
 
-// Init
 window.addEventListener('load',function(){
   setTimeout(function(){
-    p18HandleOAuthCallback();
     try{
-      var sk=localStorage.getItem('upstox_api_key');
-      if(sk){
-        UPSTOX_API_KEY=sk;
-        var ki=document.getElementById('sUpstoxKey');if(ki)ki.value=sk;
-        var si=document.getElementById('setupUpstoxKey');if(si)si.value=sk;
-      }
-      // Load capital into settings
       var sc=localStorage.getItem('s_capital');
       if(sc){var scv=parseFloat(sc);if(scv>=1000){var ci=document.getElementById('sCapital');if(ci)ci.value=scv;}}
-      var code=localStorage.getItem('upstox_code');
-      var cat=localStorage.getItem('upstox_connected_at');
-      if(code&&cat&&(Date.now()-parseInt(cat))<8*3600*1000){
-        UPSTOX_TOKEN=code;
-        // Don't mark as live — token exchange not done, verify on first scan
-        p18UpdateConnectionUI(false);
-      } else {
-        if(code){try{localStorage.removeItem('upstox_code');localStorage.removeItem('upstox_connected_at');}catch(e){}}
-        p18UpdateConnectionUI(false);
-      }
     }catch(e){}
     p18RenderPerformance();
     p18RenderTrustScore();
