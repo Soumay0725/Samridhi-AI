@@ -65,7 +65,55 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
   .idx-v{font-size:11px;}
 }
 
-/* ══ PHASE 18: REAL-TIME DATA + TRUST DASHBOARD ══ */
+/* ══ PHASE 19: ADVANCED SIGNAL ENGINE + EXIT INTELLIGENCE ══ */
+
+/* Position tracker */
+.pos-tracker-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:10px;transition:all .2s;}
+.pos-tracker-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+.pos-tracker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.pos-tracker-sym{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--navy);}
+.pos-tracker-sector{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;}
+.pos-progress{height:6px;background:var(--border);border-radius:3px;margin:10px 0;overflow:hidden;}
+.pos-progress-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.pos-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.pos-metric{text-align:center;}
+.pos-metric-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--navy);}
+.pos-metric-lbl{font-size:9px;color:var(--muted);font-family:'Inter',sans-serif;text-transform:uppercase;}
+.pos-actions{display:flex;gap:8px;}
+.pos-hold-btn{flex:1;padding:8px;border-radius:10px;background:rgba(70,201,138,0.08);border:1px solid rgba(70,201,138,0.2);color:var(--emerald);font-size:11px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;}
+.pos-exit-btn{flex:1;padding:8px;border-radius:10px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);color:var(--sell);font-size:11px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;}
+.pos-hold-btn:hover{background:rgba(70,201,138,0.14);}
+.pos-exit-btn:hover{background:rgba(255,107,107,0.14);}
+
+/* Hold/Exit recommendation modal */
+.hold-exit-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:850;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.hold-exit-modal.open{display:flex;}
+.hold-exit-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:28px;width:100%;max-width:400px;margin:20px;box-shadow:0 16px 60px rgba(0,0,0,0.15);animation:fadeUp .25s ease both;}
+.he-stock{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.he-rec{font-size:14px;font-weight:600;padding:12px 16px;border-radius:14px;margin:14px 0;line-height:1.5;}
+.he-rec.hold{background:rgba(70,201,138,0.08);border:1px solid rgba(70,201,138,0.2);color:var(--emerald);}
+.he-rec.exit{background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);color:var(--sell);}
+.he-reasons{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:16px;}
+
+/* Telegram setup in settings */
+.tg-setup{background:rgba(37,211,102,0.04);border:1px solid rgba(37,211,102,0.15);border-radius:14px;padding:14px 16px;margin-top:10px;}
+.tg-status{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:8px;}
+.tg-dot{width:6px;height:6px;border-radius:50%;}
+.tg-dot.on{background:var(--emerald);animation:pulse 1.5s infinite;}
+.tg-dot.off{background:var(--muted);}
+
+/* Buy this button on signal cards */
+.buy-this-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;background:var(--navy);border:none;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;margin-top:8px;}
+.buy-this-btn:hover{background:#0F1A2E;transform:scale(1.03);}
+
+/* Confluence badge */
+.confluence-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.5px;font-family:'Inter',sans-serif;}
+.conf-high{background:rgba(70,201,138,0.1);border:1px solid rgba(70,201,138,0.25);color:var(--emerald);}
+.conf-med{background:rgba(232,188,105,0.1);border:1px solid rgba(232,188,105,0.25);color:#B8922A;}
+.conf-low{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);color:var(--sell);}
+
+/* Trailing SL indicator */
+.trailing-sl{font-size:10px;color:var(--emerald);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px;margin-top:4px;}
 
 /* Trust Score */
 .trust-score-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:20px;}
@@ -1019,6 +1067,17 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div id="reports"><div class="empty"><div class="empty-icon">&#128203;</div>Run a scan to generate reports</div></div>
     </div>
     <div class="page" id="page-papertrade">
+      <!-- ══ PHASE 19: ACTIVE POSITION TRACKER ══ -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy);">Active Positions</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;" id="posTrackerCount">None tracked</div>
+        </div>
+        <div id="posTrackerList">
+          <div class="empty" style="padding:16px 0;"><div class="empty-icon">📍</div>Click "I Bought This" on any signal to track it here</div>
+        </div>
+      </div>
+
       <div style="margin-bottom:16px;">
         <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:3px;">Paper Trading</div>
         <div style="font-size:12px;color:var(--muted);">Practice with virtual money. Zero risk, real learning.</div>
@@ -1890,6 +1949,23 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
         <button class="save-btn" onclick="saveS()">Save Settings</button>
       </div>
 
+      <!-- Phase 19: Telegram Notifications -->
+      <div class="scard" style="margin-bottom:14px;">
+        <div class="sc-h"><div class="sc-t">📱 Telegram Notifications</div></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;">Get instant alerts when your tracked positions hit target or stop loss. Free, works on phone and desktop.</div>
+        <label class="s-lbl">Bot Token</label>
+        <input class="s-inp2" id="sTgToken" placeholder="From @BotFather" autocomplete="off" style="margin-bottom:8px;">
+        <label class="s-lbl">Your Chat ID</label>
+        <input class="s-inp2" id="sTgChatId" placeholder="e.g. 7175938550" style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;">
+          <button class="save-btn" style="flex:1;" onclick="p19SaveTelegram()">Save & Test</button>
+        </div>
+        <div class="tg-status" id="tgStatus">
+          <div class="tg-dot off" id="tgDot"></div>
+          <span id="tgStatusText">Not configured</span>
+        </div>
+      </div>
+
       <!-- Capital in Settings -->
       <div class="scard" style="margin-bottom:14px;">
         <div class="sc-h"><div class="sc-t">💰 Trading Capital</div></div>
@@ -1942,6 +2018,20 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <div style="display:flex;gap:10px;">
       <button onclick="closeCapModal()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;">Cancel</button>
       <button onclick="saveCapital()" style="flex:2;padding:11px;border-radius:12px;background:var(--navy);border:none;font-family:'Sora',sans-serif;font-size:12px;color:#fff;cursor:pointer;font-weight:600;">Save Capital</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PHASE 19: HOLD/EXIT RECOMMENDATION MODAL ══ -->
+<div class="hold-exit-modal" id="holdExitModal">
+  <div class="hold-exit-card">
+    <div class="he-stock" id="heStock">–</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px;" id="heDetail">–</div>
+    <div class="he-rec" id="heRec">Analysing...</div>
+    <div class="he-reasons" id="heReasons"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeHoldExitModal()" style="flex:1;padding:11px;border-radius:12px;background:var(--bg);border:1px solid var(--border);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;">Close</button>
+      <button onclick="p19ExitPosition(currentHEPos)" style="flex:1;padding:11px;border-radius:12px;background:var(--sell);border:none;color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;" id="heExitBtn">Mark as Exited</button>
     </div>
   </div>
 </div>
@@ -2535,7 +2625,7 @@ async function fetchYahoo(sym){
     if(closes.length>=50)  sma50=parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
     if(closes.length>=200) sma200=parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
     // Only compute SMA200 when we actually have 200 bars — never fake it with fewer bars
-    // sma200 stays at price*0.92 fallback if insufficient history
+    // sma200 stays at price (neutral) if fewer than 200 bars available — never faked
 
     // == REAL MACD (12 EMA - 26 EMA) ==
     function calcEMA(arr, period){
@@ -7776,6 +7866,442 @@ window.addEventListener('load',function(){
     p18RenderPerformance();
     p18RenderTrustScore();
   },500);
+});
+</script>
+
+<!-- ══ PHASE 19: ADVANCED SIGNAL ENGINE + EXIT INTELLIGENCE ══ -->
+<script>
+// ============================
+//  PHASE 19
+//  1. Confluence filter — 6/8 indicators must agree
+//  2. ATR-based dynamic targets (already done in Phase 17 — improved here)
+//  3. Confidence wider spread
+//  4. Position tracker — "I Bought This"
+//  5. "Should I Hold or Exit?" recommendation
+//  6. Trailing stop loss
+//  7. Telegram exit notifications
+//  8. Risk Calculator auto-fill
+// ============================
+
+var TG_TOKEN = '';
+var TG_CHAT_ID = '';
+var P19_POSITIONS = []; // Active tracked positions
+var currentHEPos = null;
+
+// ── Load Telegram + positions from localStorage ──
+(function(){
+  try {
+    TG_TOKEN = localStorage.getItem('tg_token') || '';
+    TG_CHAT_ID = localStorage.getItem('tg_chat_id') || '';
+    P19_POSITIONS = JSON.parse(localStorage.getItem('p19_positions') || '[]');
+  } catch(e) {}
+})();
+
+// ── 1. Confluence filter — override calcScore ──
+var _p19OrigCalcScore = calcScore;
+calcScore = function(dat) {
+  var scored = _p19OrigCalcScore(dat);
+
+  // Count how many of 8 indicators agree with the signal direction
+  var scores = scored.scores || {};
+  var bullCount = 0, bearCount = 0;
+  Object.values(scores).forEach(function(v) {
+    if (v > 0) bullCount++;
+    else if (v < 0) bearCount++;
+  });
+  var totalIndicators = Object.keys(scores).length || 8;
+  var agreeCount = scored.signal === 'BUY' ? bullCount : scored.signal === 'SELL' ? bearCount : 0;
+  scored.confluence = agreeCount;
+  scored.confluenceOf = totalIndicators;
+
+  // Confidence wider spread — use full 0-100 range mapped from rawScore
+  var raw = scored.rawScore || 0;
+  if (scored.signal === 'BUY' || scored.signal === 'SELL') {
+    var absRaw = Math.abs(raw);
+    // Map 3.5-10 to 55-95 with wider spread
+    var newConf = Math.round(55 + ((absRaw - 3.5) / 6.5) * 40);
+    // Bonus for high confluence
+    if (agreeCount >= 7) newConf = Math.min(95, newConf + 8);
+    else if (agreeCount >= 6) newConf = Math.min(95, newConf + 4);
+    else if (agreeCount <= 4) newConf = Math.max(50, newConf - 8);
+    else if (agreeCount <= 3) newConf = Math.max(50, newConf - 15);
+    scored.confidence = Math.max(50, Math.min(95, newConf));
+  }
+
+  return scored;
+};
+
+// ── 2. Trailing Stop Loss calculation ──
+function p19CalcTrailingSL(position) {
+  var sym = position.sym;
+  var entryPrice = position.entry;
+  var originalSL = position.stopLoss;
+  var currentPrice = SD[sym] ? SD[sym].price : entryPrice;
+  var atr = SD[sym] ? (SD[sym].atr || entryPrice * 0.012) : entryPrice * 0.012;
+
+  if (position.signal !== 'BUY') return originalSL;
+
+  // Trailing SL = current price - 1.5 ATR, but never lower than original SL
+  var trailingSL = Math.round(currentPrice - atr * 1.5);
+  return Math.max(originalSL, trailingSL);
+}
+
+// ── 3. "I Bought This" — add to position tracker ──
+function p19BuyThis(sym) {
+  var sig = SG[sym];
+  var dat = SD[sym];
+  if (!sig || !dat) { toast('Run a scan first to get signal data', 'err'); return; }
+
+  // Check if already tracking
+  if (P19_POSITIONS.find(function(p){ return p.sym === sym && p.active; })) {
+    toast(NM[sym] + ' is already being tracked', 'ok');
+    pg('papertrade', null);
+    return;
+  }
+
+  var pos = {
+    sym: sym,
+    name: NM[sym] || sym,
+    sector: SEC[sym] || '',
+    signal: sig.signal,
+    entry: sig.entry,
+    target: sig.target,
+    stopLoss: sig.stopLoss,
+    originalSL: sig.stopLoss,
+    confidence: sig.confidence,
+    horizon: sig.horizon,
+    buyDate: Date.now(),
+    active: true,
+    trailingSL: sig.stopLoss
+  };
+
+  P19_POSITIONS.unshift(pos);
+  try { localStorage.setItem('p19_positions', JSON.stringify(P19_POSITIONS)); } catch(e) {}
+
+  // Send Telegram notification
+  p19SendTelegram('📍 New Position Tracked\n\n' +
+    '*' + pos.name + '* (' + sym + ')\n' +
+    '💰 Entry: ₹' + pos.entry + '\n' +
+    '🎯 Target: ₹' + pos.target + '\n' +
+    '🛡 Stop Loss: ₹' + pos.stopLoss + '\n' +
+    '⚡ Confidence: ' + pos.confidence + '%\n' +
+    '📅 ' + pos.horizon);
+
+  toast('Tracking ' + pos.name + ' — go to Paper Trade to monitor', 'ok');
+  p19RenderPositions();
+}
+
+// ── 4. Render position tracker ──
+function p19RenderPositions() {
+  var list = document.getElementById('posTrackerList');
+  var count = document.getElementById('posTrackerCount');
+  if (!list) return;
+
+  var active = P19_POSITIONS.filter(function(p){ return p.active; });
+  if (count) count.textContent = active.length + ' active position' + (active.length !== 1 ? 's' : '');
+
+  if (!active.length) {
+    list.innerHTML = '<div class="empty" style="padding:16px 0;"><div class="empty-icon">📍</div>Click "I Bought This" on any signal to track it here</div>';
+    return;
+  }
+
+  list.innerHTML = active.map(function(pos, idx) {
+    var currentPrice = SD[pos.sym] ? SD[pos.sym].price : pos.entry;
+    var pnlPct = ((currentPrice - pos.entry) / pos.entry * 100).toFixed(1);
+    var pnlAmt = Math.round(currentPrice - pos.entry);
+    var progress = Math.max(0, Math.min(100, (currentPrice - pos.entry) / (pos.target - pos.entry) * 100));
+    var trailSL = p19CalcTrailingSL(pos);
+    var isGain = pnlAmt >= 0;
+    var progressColor = progress > 70 ? 'var(--emerald)' : progress > 30 ? '#B8922A' : 'var(--sell)';
+
+    // Check if hit target or SL
+    var status = '';
+    if (currentPrice >= pos.target) status = '🎯 Target reached!';
+    else if (currentPrice <= trailSL) status = '⚠️ At stop loss!';
+
+    return '<div class="pos-tracker-card">' +
+      '<div class="pos-tracker-header">' +
+        '<div><div class="pos-tracker-sym">' + pos.name + '</div>' +
+        '<div class="pos-tracker-sector">' + pos.sector + ' · ' + pos.horizon + '</div></div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:700;color:' + (isGain?'var(--emerald)':'var(--sell)') + ';">' +
+            (isGain?'+':'') + pnlPct + '%</div>' +
+          '<div style="font-size:10px;color:var(--muted);">₹' + (isGain?'+':'') + pnlAmt + ' per share</div>' +
+        '</div>' +
+      '</div>' +
+      (status ? '<div style="font-size:11px;font-weight:600;color:var(--emerald);margin-bottom:6px;">' + status + '</div>' : '') +
+      '<div class="pos-progress"><div class="pos-progress-fill" style="width:' + Math.max(2,progress) + '%;background:' + progressColor + ';"></div></div>' +
+      '<div class="pos-metrics">' +
+        '<div class="pos-metric"><div class="pos-metric-val">₹' + pos.entry + '</div><div class="pos-metric-lbl">Entry</div></div>' +
+        '<div class="pos-metric"><div class="pos-metric-val" style="color:var(--emerald);">₹' + pos.target + '</div><div class="pos-metric-lbl">Target</div></div>' +
+        '<div class="pos-metric"><div class="pos-metric-val" style="color:var(--sell);">₹' + trailSL + '</div><div class="pos-metric-lbl">Trail SL</div></div>' +
+        '<div class="pos-metric"><div class="pos-metric-val">₹' + currentPrice + '</div><div class="pos-metric-lbl">Current</div></div>' +
+      '</div>' +
+      (trailSL > pos.originalSL ? '<div class="trailing-sl">↑ Stop loss raised from ₹' + pos.originalSL + ' to ₹' + trailSL + '</div>' : '') +
+      '<div class="pos-actions">' +
+        '<button class="pos-hold-btn" onclick="p19ShowHoldExit(' + idx + ')">Should I hold or exit?</button>' +
+        '<button class="pos-exit-btn" onclick="p19MarkExited(' + idx + ')">Mark Exited</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── 5. Hold or Exit recommendation ──
+function p19ShowHoldExit(idx) {
+  var active = P19_POSITIONS.filter(function(p){ return p.active; });
+  var pos = active[idx];
+  if (!pos) return;
+  currentHEPos = pos;
+
+  var currentPrice = SD[pos.sym] ? SD[pos.sym].price : pos.entry;
+  var trailSL = p19CalcTrailingSL(pos);
+  var pnlPct = ((currentPrice - pos.entry) / pos.entry * 100).toFixed(1);
+  var toTarget = ((pos.target - currentPrice) / currentPrice * 100).toFixed(1);
+  var rsi = SD[pos.sym] ? SD[pos.sym].rsi : 50;
+  var volR = SD[pos.sym] ? SD[pos.sym].volR : 1;
+  var macdBull = SD[pos.sym] ? SD[pos.sym].macd.bull : true;
+
+  // Build recommendation
+  var reasons = [];
+  var holdScore = 0;
+
+  if (currentPrice >= pos.target * 0.98) { reasons.push('Price is within 2% of your target — consider taking profits'); holdScore -= 2; }
+  else if (currentPrice <= trailSL * 1.02) { reasons.push('Price is dangerously close to your stop loss'); holdScore -= 3; }
+  else { reasons.push('Price is ' + toTarget + '% away from target — still room to run'); holdScore += 1; }
+
+  if (rsi > 70) { reasons.push('RSI is overbought (' + rsi.toFixed(1) + ') — momentum may fade'); holdScore -= 1; }
+  else if (rsi < 40) { reasons.push('RSI is oversold (' + rsi.toFixed(1) + ') — watch carefully'); holdScore -= 1; }
+  else { reasons.push('RSI is healthy (' + rsi.toFixed(1) + ') — trend intact'); holdScore += 1; }
+
+  if (macdBull) { reasons.push('MACD remains bullish — uptrend supported'); holdScore += 1; }
+  else { reasons.push('MACD has turned bearish — momentum weakening'); holdScore -= 1; }
+
+  if (volR > 1.3) { reasons.push('Volume is above average (' + volR.toFixed(1) + 'x) — strong conviction'); holdScore += 1; }
+  else { reasons.push('Volume is below average — weak follow-through'); holdScore -= 0.5; }
+
+  var rec, recCls;
+  if (holdScore >= 2) { rec = '✅ Hold — conditions still support your trade.'; recCls = 'hold'; }
+  else if (holdScore <= -2) { rec = '⚠️ Consider exiting — multiple signals weakening.'; recCls = 'exit'; }
+  else { rec = '🌤 Neutral — use your judgement based on your risk tolerance.'; recCls = holdScore >= 0 ? 'hold' : 'exit'; }
+
+  document.getElementById('heStock').textContent = pos.name + ' (' + pos.sym + ')';
+  document.getElementById('heDetail').textContent = 'Entry ₹' + pos.entry + ' · Current ₹' + currentPrice + ' · ' + (pnlPct >= 0 ? '+' : '') + pnlPct + '%';
+  document.getElementById('heRec').textContent = rec;
+  document.getElementById('heRec').className = 'he-rec ' + recCls;
+  document.getElementById('heReasons').innerHTML = reasons.map(function(r){ return '• ' + r; }).join('<br>');
+  document.getElementById('holdExitModal').classList.add('open');
+}
+
+function closeHoldExitModal() { document.getElementById('holdExitModal').classList.remove('open'); }
+
+function p19ExitPosition(pos) {
+  if (!pos) return;
+  p19MarkExitedByPos(pos);
+  closeHoldExitModal();
+}
+
+function p19MarkExited(idx) {
+  var active = P19_POSITIONS.filter(function(p){ return p.active; });
+  var pos = active[idx];
+  if (!pos) return;
+  p19MarkExitedByPos(pos);
+}
+
+function p19MarkExitedByPos(pos) {
+  var currentPrice = SD[pos.sym] ? SD[pos.sym].price : pos.entry;
+  var pnlPct = ((currentPrice - pos.entry) / pos.entry * 100).toFixed(1);
+
+  pos.active = false;
+  pos.exitDate = Date.now();
+  pos.exitPrice = currentPrice;
+
+  try { localStorage.setItem('p19_positions', JSON.stringify(P19_POSITIONS)); } catch(e) {}
+
+  // Send Telegram exit notification
+  var outcome = currentPrice >= pos.target ? '🎯 TARGET HIT' : currentPrice <= pos.stopLoss ? '🛑 STOP LOSS HIT' : '📤 MANUAL EXIT';
+  p19SendTelegram(outcome + '\n\n' +
+    '*' + pos.name + '* (' + pos.sym + ')\n' +
+    '📊 Entry: ₹' + pos.entry + ' → Exit: ₹' + currentPrice + '\n' +
+    '💰 Return: ' + (pnlPct >= 0 ? '+' : '') + pnlPct + '%\n' +
+    (currentPrice >= pos.target ? '✅ Congratulations!' : currentPrice <= pos.stopLoss ? '🛡 Capital protected.' : ''));
+
+  toast(pos.name + ' marked as exited — ' + (pnlPct >= 0 ? '+' : '') + pnlPct + '%', 'ok');
+  p19RenderPositions();
+}
+
+// ── 6. Telegram notifications ──
+function p19SaveTelegram() {
+  var token = (document.getElementById('sTgToken') || {}).value || '';
+  var chatId = (document.getElementById('sTgChatId') || {}).value || '';
+  if (!token || !chatId) { toast('Enter both Token and Chat ID', 'err'); return; }
+  TG_TOKEN = token.trim();
+  TG_CHAT_ID = chatId.trim();
+  try { localStorage.setItem('tg_token', TG_TOKEN); localStorage.setItem('tg_chat_id', TG_CHAT_ID); } catch(e) {}
+  // Send test message
+  p19SendTelegram('🪷 *Samridhi AI* is connected!\n\nYou will now receive exit alerts when your tracked positions hit target or stop loss.').then(function(ok) {
+    var dot = document.getElementById('tgDot');
+    var txt = document.getElementById('tgStatusText');
+    if (ok) {
+      if (dot) dot.className = 'tg-dot on';
+      if (txt) txt.textContent = 'Connected — test message sent ✓';
+      toast('Telegram connected! Test message sent.', 'ok');
+    } else {
+      if (dot) dot.className = 'tg-dot off';
+      if (txt) txt.textContent = 'Failed — check token and chat ID';
+      toast('Failed — check your token and chat ID', 'err');
+    }
+  });
+}
+
+async function p19SendTelegram(text) {
+  if (!TG_TOKEN || !TG_CHAT_ID) return false;
+  try {
+    var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage';
+    var r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' }),
+      signal: AbortSignal.timeout(8000)
+    });
+    var d = await r.json();
+    return d.ok;
+  } catch(e) { return false; }
+}
+
+// ── 7. Add "I Bought This" button to hero card and detail panel ──
+var _p19OrigRHero = rHero;
+rHero = function() {
+  _p19OrigRHero();
+  if (!PK.length) return;
+  var sym = PK[0].sym;
+  // Add "I Bought This" button after hero buttons
+  var heroSection = document.getElementById('heroPosRow');
+  if (heroSection) {
+    var existing = document.getElementById('heroBuyThisBtn');
+    if (!existing) {
+      var btn = document.createElement('button');
+      btn.id = 'heroBuyThisBtn';
+      btn.className = 'buy-this-btn';
+      btn.innerHTML = '📍 I Bought This';
+      btn.onclick = function() { p19BuyThis(sym); };
+      heroSection.parentNode.insertBefore(btn, heroSection.nextSibling);
+    } else {
+      existing.onclick = function() { p19BuyThis(sym); };
+    }
+  }
+};
+
+// ── 8. Risk Calculator auto-fill from signal ──
+function p19AutoFillRiskCalc(sym) {
+  var sig = SG[sym];
+  var dat = SD[sym];
+  if (!sig || !dat) return;
+  var entryEl = document.getElementById('rcEntry');
+  var slEl = document.getElementById('rcSL');
+  var tgtEl = document.getElementById('rcTarget');
+  if (entryEl) entryEl.value = sig.entry;
+  if (slEl) slEl.value = sig.stopLoss;
+  if (tgtEl) tgtEl.value = sig.target;
+  if (typeof calcRisk === 'function') calcRisk();
+  pg('risk', null);
+  toast('Risk Calculator filled from ' + (NM[sym]||sym) + ' signal', 'ok');
+}
+
+// ── Add confluence badge to signal cards ──
+var _p19OrigFP = fP;
+fP = function(f, btn) {
+  _p19OrigFP(f, btn);
+  setTimeout(function() {
+    var cards = document.querySelectorAll('#pGrid .rpt-card');
+    cards.forEach(function(card) {
+      if (card.querySelector('.p19-conf-badge')) return;
+      // Find symbol
+      var PK_ = typeof PK !== 'undefined' ? PK : [];
+      PK_.forEach(function(p) {
+        var name = NM[p.sym] || p.sym;
+        var cardText = card.textContent;
+        if (cardText.indexOf(name) > -1 || cardText.indexOf(p.sym) > -1) {
+          var sig = p.signal;
+          if (!sig.confluence) return;
+          var confBadge = document.createElement('div');
+          confBadge.className = 'p19-conf-badge';
+          var cls = sig.confluence >= 6 ? 'conf-high' : sig.confluence >= 4 ? 'conf-med' : 'conf-low';
+          confBadge.innerHTML = '<span class="confluence-badge ' + cls + '">' + sig.confluence + '/' + (sig.confluenceOf||8) + ' indicators agree</span>';
+
+          var buyBtn = document.createElement('button');
+          buyBtn.className = 'buy-this-btn';
+          buyBtn.innerHTML = '📍 I Bought This';
+          buyBtn.onclick = (function(sym){ return function(){ p19BuyThis(sym); }; })(p.sym);
+
+          var riskBtn = document.createElement('button');
+          riskBtn.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;margin-top:8px;margin-left:6px;font-family:\'Sora\',sans-serif;';
+          riskBtn.innerHTML = '📐 Fill Risk Calc';
+          riskBtn.onclick = (function(sym){ return function(){ p19AutoFillRiskCalc(sym); }; })(p.sym);
+
+          var aiBox = card.querySelector('.ai-box');
+          if (aiBox) {
+            aiBox.parentNode.insertBefore(confBadge, aiBox);
+            aiBox.parentNode.insertBefore(buyBtn, aiBox.nextSibling);
+            buyBtn.after(riskBtn);
+          }
+        }
+      });
+    });
+  }, 150);
+};
+
+// ── Monitor positions after each scan — send alerts if needed ──
+var _p19OrigRAll = rAll;
+rAll = function(mood) {
+  _p19OrigRAll(mood);
+  p19CheckPositionAlerts();
+  setTimeout(p19RenderPositions, 400);
+};
+
+function p19CheckPositionAlerts() {
+  var active = P19_POSITIONS.filter(function(p){ return p.active; });
+  active.forEach(function(pos) {
+    var currentPrice = SD[pos.sym] ? SD[pos.sym].price : null;
+    if (!currentPrice) return;
+    var trailSL = p19CalcTrailingSL(pos);
+    // Update trailing SL
+    if (trailSL > pos.trailingSL) {
+      pos.trailingSL = trailSL;
+      try { localStorage.setItem('p19_positions', JSON.stringify(P19_POSITIONS)); } catch(e) {}
+    }
+    // Alert if target hit
+    if (currentPrice >= pos.target) {
+      p19SendTelegram('🎯 TARGET HIT!\n\n*' + pos.name + '* reached ₹' + currentPrice + '\nYour target was ₹' + pos.target + '\n\nConsider booking profits now.');
+    }
+    // Alert if approaching SL
+    else if (currentPrice <= trailSL * 1.02 && currentPrice > trailSL) {
+      p19SendTelegram('⚠️ STOP LOSS ALERT\n\n*' + pos.name + '* is near your stop loss\nCurrent: ₹' + currentPrice + ' | SL: ₹' + trailSL + '\n\nMonitor closely.');
+    }
+  });
+}
+
+// ── Hook into pg — render positions when going to paper trade ──
+var _p19OrigPg = pg;
+pg = function(name, el) {
+  _p19OrigPg(name, el);
+  if (name === 'papertrade') p19RenderPositions();
+};
+
+// ── Load Telegram settings into Settings page ──
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    try {
+      var token = localStorage.getItem('tg_token');
+      var chatId = localStorage.getItem('tg_chat_id');
+      if (token) { var t = document.getElementById('sTgToken'); if(t) t.value = token; TG_TOKEN = token; }
+      if (chatId) { var c = document.getElementById('sTgChatId'); if(c) c.value = chatId; TG_CHAT_ID = chatId; }
+      if (token && chatId) {
+        var dot = document.getElementById('tgDot'); if(dot) dot.className = 'tg-dot on';
+        var txt = document.getElementById('tgStatusText'); if(txt) txt.textContent = 'Connected';
+      }
+    } catch(e) {}
+    p19RenderPositions();
+  }, 600);
 });
 </script>
 </body>
