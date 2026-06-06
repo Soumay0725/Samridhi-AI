@@ -65,7 +65,58 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
   .idx-v{font-size:11px;}
 }
 
-/* ══ PHASE 17A: AUTO POSITION SIZING + GUARDRAILS ══ */
+/* ══ PHASE 18: REAL-TIME DATA + TRUST DASHBOARD ══ */
+
+/* Upstox connect button */
+.upstox-connect-btn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#6B3FA0,#4B2882);border:none;border-radius:14px;padding:12px 20px;color:#fff;font-family:'Sora',-apple-system,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;}
+.upstox-connect-btn:hover{opacity:0.9;transform:translateY(-1px);}
+.upstox-connect-btn.connected{background:linear-gradient(135deg,rgba(70,201,138,0.12),rgba(70,201,138,0.06));border:1px solid rgba(70,201,138,0.3);color:var(--emerald);}
+.upstox-status{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:8px;color:var(--muted);}
+.upstox-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.upstox-status-dot.live{background:var(--emerald);animation:pulse 1.5s infinite;}
+.upstox-status-dot.delayed{background:#B8922A;}
+.upstox-status-dot.disconnected{background:var(--sell);}
+
+/* Trust Score */
+.trust-score-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:20px;}
+.trust-ring{width:72px;height:72px;flex-shrink:0;position:relative;}
+.trust-ring svg{transform:rotate(-90deg);}
+.trust-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.trust-ring-num{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--navy);line-height:1;}
+.trust-ring-pct{font-size:8px;color:var(--muted);font-family:'Inter',sans-serif;}
+.trust-info{flex:1;}
+.trust-label{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.trust-sub{font-size:11px;color:var(--muted);line-height:1.5;}
+.trust-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;margin-top:6px;letter-spacing:.3px;}
+.trust-badge.strong{background:rgba(70,201,138,0.1);border:1px solid rgba(70,201,138,0.25);color:var(--emerald);}
+.trust-badge.building{background:rgba(232,188,105,0.1);border:1px solid rgba(232,188,105,0.25);color:#B8922A;}
+.trust-badge.limited{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);color:var(--sell);}
+
+/* 30-day performance summary */
+.perf-summary{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px 20px;margin-bottom:16px;}
+.perf-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.perf-title{font-size:12px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;font-family:'Inter',sans-serif;}
+.perf-period{font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;}
+.perf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.perf-cell{text-align:center;}
+.perf-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--navy);line-height:1;margin-bottom:3px;}
+.perf-lbl{font-size:9px;color:var(--muted);font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.5px;}
+.perf-val.green{color:var(--emerald);}
+.perf-val.red{color:var(--sell);}
+
+/* Plain language mood */
+.plain-mood{border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:13px;font-weight:500;line-height:1.5;border:1px solid var(--border);}
+.plain-mood.bullish{background:rgba(70,201,138,0.05);border-color:rgba(70,201,138,0.2);color:var(--navy);}
+.plain-mood.bearish{background:rgba(255,107,107,0.05);border-color:rgba(255,107,107,0.2);color:var(--navy);}
+.plain-mood.neutral{background:rgba(232,188,105,0.05);border-color:rgba(232,188,105,0.2);color:var(--navy);}
+.plain-mood-icon{font-size:16px;margin-right:8px;}
+
+/* Data quality badge in topbar */
+.data-badge{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.5px;font-family:'Inter',sans-serif;}
+.data-badge.live{background:rgba(70,201,138,0.1);border:1px solid rgba(70,201,138,0.25);color:var(--emerald);}
+.data-badge.delayed{background:rgba(232,188,105,0.1);border:1px solid rgba(232,188,105,0.25);color:#B8922A;}
+.data-badge-dot{width:4px;height:4px;border-radius:50%;background:currentColor;}
+.data-badge.live .data-badge-dot{animation:pulse 1.5s infinite;}
 
 /* Capital setup step in launch screen */
 .cap-step{margin-top:14px;}
@@ -648,19 +699,10 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <input class="s-inp" id="uname" type="text" placeholder="e.g. Soumay" maxlength="20">
     <label class="s-lbl">Groq API Key</label>
     <input class="s-inp" id="groqKey" type="text" placeholder="gsk_..." autocomplete="off">
-    <div class="cap-step">
-      <label class="s-lbl">Trading Capital (₹) <span style="background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.2);border-radius:20px;padding:1px 8px;font-size:9px;letter-spacing:.5px;margin-left:4px;">ONLY IF TRADING</span></label>
-      <input class="s-inp" id="setupCapital" type="number" min="1000" step="1000">
-      <div class="cap-presets">
-        <div class="cap-preset" onclick="setCapPreset(25000,this)">₹25K</div>
-        <div class="cap-preset" onclick="setCapPreset(50000,this)">₹50K</div>
-        <div class="cap-preset" onclick="setCapPreset(100000,this)">₹1L</div>
-        <div class="cap-preset" onclick="setCapPreset(250000,this)">₹2.5L</div>
-        <div class="cap-preset" onclick="setCapPreset(500000,this)">₹5L</div>
-      </div>
-    </div>
+    <label class="s-lbl">Upstox API Key <span style="background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.2);border-radius:20px;padding:1px 8px;font-size:9px;letter-spacing:.5px;margin-left:4px;">LIVE PRICES</span></label>
+    <input class="s-inp" id="setupUpstoxKey" type="text" placeholder="For real-time NSE prices" autocomplete="off">
     <button class="s-btn" id="launchBtn">✦ Launch Samridhi AI</button>
-    <div class="s-note">Credentials stored only in your browser · Capital optional</div>
+    <div class="s-note">Credentials stored only in your browser · Capital can be set inside the app</div>
   </div>
 </div>
 
@@ -692,6 +734,11 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div class="idx"><span class="idx-n">NIFTY 50</span>&nbsp;<span class="idx-v" id="nV">-</span><span id="nC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="idx"><span class="idx-n">SENSEX</span>&nbsp;<span class="idx-v" id="sV">-</span><span id="sC" style="font-size:10px;margin-left:3px;"></span></div>
       <div class="bell">&#128276;<div class="bell-dot"></div></div>
+      <!-- Phase 18: Data quality badge -->
+      <div class="data-badge delayed" id="dataBadge">
+        <div class="data-badge-dot"></div>
+        <span id="dataBadgeText">DELAYED</span>
+      </div>
       <!-- Phase 17A: Capital pill -->
       <div class="cap-pill" id="capPill" onclick="openCapModal()" title="Your trading capital — click to update">
         <span class="cap-pill-lbl">Capital</span>
@@ -734,6 +781,51 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div id="p16MarketBanner" class="mh-banner" style="display:none;">
         <div class="mh-banner-dot"></div>
         <span id="p16BannerText"></span>
+      </div>
+
+      <!-- ══ PHASE 18: PLAIN LANGUAGE MOOD ══ -->
+      <div class="plain-mood neutral" id="p18PlainMood" style="display:none;">
+        <span class="plain-mood-icon" id="p18MoodIcon">🌤</span>
+        <span id="p18MoodText">Run a scan to see today's market mood.</span>
+      </div>
+
+      <!-- ══ PHASE 18: TRUST SCORE + PERFORMANCE ══ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;" id="p18Dashboard">
+        <!-- Trust Score -->
+        <div class="trust-score-card" style="flex-direction:column;align-items:flex-start;gap:10px;">
+          <div style="display:flex;align-items:center;gap:14px;width:100%;">
+            <div class="trust-ring">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="30" fill="none" stroke="var(--border)" stroke-width="6"/>
+                <circle cx="36" cy="36" r="30" fill="none" stroke="var(--emerald)" stroke-width="6"
+                  stroke-dasharray="188.5" id="trustRingCircle" stroke-dashoffset="188.5"
+                  stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;"/>
+              </svg>
+              <div class="trust-ring-label">
+                <div class="trust-ring-num" id="trustScoreNum">–</div>
+                <div class="trust-ring-pct">/ 100</div>
+              </div>
+            </div>
+            <div class="trust-info">
+              <div class="trust-label">Trust Score</div>
+              <div class="trust-sub" id="trustScoreSub">Run a scan to calculate</div>
+              <div class="trust-badge building" id="trustBadge">BUILDING</div>
+            </div>
+          </div>
+        </div>
+        <!-- 30-day Performance -->
+        <div class="perf-summary" style="margin-bottom:0;">
+          <div class="perf-header">
+            <div class="perf-title">30-Day Track</div>
+            <div class="perf-period" id="perfPeriod">No data yet</div>
+          </div>
+          <div class="perf-grid">
+            <div class="perf-cell"><div class="perf-val" id="perfSignals">–</div><div class="perf-lbl">Signals</div></div>
+            <div class="perf-cell"><div class="perf-val green" id="perfHits">–</div><div class="perf-lbl">Hit Target</div></div>
+            <div class="perf-cell"><div class="perf-val" id="perfWinRate">–</div><div class="perf-lbl">Win Rate</div></div>
+            <div class="perf-cell"><div class="perf-val green" id="perfAvgReturn">–</div><div class="perf-lbl">Avg Return</div></div>
+          </div>
+        </div>
       </div>
 
       <!-- ══ PHASE 16: TODAY'S ONE SIGNAL ══ -->
@@ -1812,11 +1904,46 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
     <div class="page" id="page-settings">
       <div style="margin-bottom:18px;"><div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);">Settings</div></div>
+
+      <!-- Phase 18: Upstox Connection -->
+      <div class="scard" style="margin-bottom:14px;">
+        <div class="sc-h"><div class="sc-t">📡 Live Data — Upstox</div></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.6;">Connect your Upstox account for real-time NSE prices. One-time setup. Reconnect once daily during market hours.</div>
+        <div style="margin-bottom:10px;">
+          <label class="s-lbl">Upstox API Key</label>
+          <input class="s-inp2" id="sUpstoxKey" placeholder="Enter your Upstox API key" autocomplete="off">
+        </div>
+        <button class="upstox-connect-btn" id="upstoxConnectBtn" onclick="p18ConnectUpstox()">
+          <span id="upstoxBtnIcon">⚡</span>
+          <span id="upstoxBtnText">Connect Upstox for Live Prices</span>
+        </button>
+        <div class="upstox-status" id="upstoxStatus">
+          <div class="upstox-status-dot disconnected" id="upstoxStatusDot"></div>
+          <span id="upstoxStatusText">Not connected — using Yahoo Finance (15-min delayed)</span>
+        </div>
+      </div>
+
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Groq API Key</div></div><input class="s-inp2" id="sGroq"></div>
         <button class="save-btn" onclick="saveS()">Save Settings</button>
       </div>
+
+      <!-- Capital in Settings -->
+      <div class="scard" style="margin-bottom:14px;">
+        <div class="sc-h"><div class="sc-t">💰 Trading Capital</div></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;">Used to calculate exact share quantities using the 2% risk rule. Optional — only needed if you are actively trading.</div>
+        <input class="s-inp2" id="sCapital" type="number" placeholder="e.g. 100000" min="1000" step="1000" style="margin-bottom:10px;">
+        <div class="cap-presets" style="margin-bottom:12px;">
+          <div class="cap-preset" onclick="sSetCapPreset(25000,this)">₹25K</div>
+          <div class="cap-preset" onclick="sSetCapPreset(50000,this)">₹50K</div>
+          <div class="cap-preset" onclick="sSetCapPreset(100000,this)">₹1L</div>
+          <div class="cap-preset" onclick="sSetCapPreset(250000,this)">₹2.5L</div>
+          <div class="cap-preset" onclick="sSetCapPreset(500000,this)">₹5L</div>
+        </div>
+        <button class="save-btn" onclick="saveCapitalFromSettings()">Save Capital</button>
+      </div>
+
       <div class="scard"><div class="sc-h"><div class="sc-t">Tracked Stocks</div></div><div id="sTags" style="display:flex;flex-wrap:wrap;gap:8px;"></div></div>
     </div>
   </div>
@@ -2005,13 +2132,13 @@ var ST=['RELIANCE','TCS','HDFCBANK','INFY','BHARTIARTL','WIPRO','TATAMOTORS','SB
 'APOLLOHOSP','FORTIS','MAXHEALTH','ASTER','KIMS','MEDPLUS','VIJAYA','METROPOLIS','THYROCARE','LALPATHLAB',
 'NESTLEIND','BRITANNIA','DABUR','MARICO','EMAMILTD','COLPAL','GODREJCP','BAJAJCON','RADICO','UNITDSPR',
 'HAVELLS','VOLTAS','BLUESTARCO','WHIRLPOOL','ORIENTELEC','CROMPTON','KAJARIACER','CERA','ASTRAL','AARTIIND',
-'NTPC','POWERGRID','TATAPOWER','ADANIPOWER','CESC','TORNTPOWER','JSWENERGY','RPOWER','NHPC','SJVN',
+'NTPC','POWERGRID','TATAPOWER','ADANIPOWER','CESC','TORNTPOWER','JSWENERGY','IREDA','NHPC','SJVN',
 'ONGC','BPCL','IOC','HINDPETRO','GAIL','PETRONET','CONCOR','CASTROLIND','GULFOILLUB','THERMAX',
 'TATASTEEL','JSWSTEEL','HINDALCO','VEDL','NATIONALUM','HINDCOPPER','NMDC','COALINDIA','SAIL','JINDALSTEL',
 'SHREECEM','ACC','AMBUJACEMENT','INDIACEM','RAMCOCEM','HEIDELBERG','JKCEMENT','ORIENTCEM','DALMIA','BIRLACORPN',
-'LTTS','SIEMENS','ABB','BHEL','CUMMINSIND','KEC','KALPATPOWR','APLAPOLLO','JINDALSAW','IFCI',
+'LTTS','SIEMENS','ABB','BHEL','CUMMINSIND','KEC','KALPATPOWR','APLAPOLLO','JINDALSAW','IRFC',
 'DLF','GODREJPROP','OBEROIRLTY','PRESTIGE','BRIGADE','SOBHA','MAHLIFE','KOLTEPATIL','SUNTECK','NESCO',
-'VODAFONE','TATACOMM','STLTECH','INDUSTOWER','HATHWAY','NETWORK18','PIDILITIND','BERGEPAINT','KANSAINER','SWARAJENG',
+'IDEA','TATACOMM','STLTECH','INDUSTOWER','HATHWAY','NETWORK18','PIDILITIND','BERGEPAINT','KANSAINER','SWARAJENG',
 'SYNGENE','ALEMBICPHARM','AJANTPHARM','LAURUSLABS','STAR','IPCALAB','ASTRAZEN','PFIZER','GLAXO','ABBOTINDIA'];
 
 // Populate paper trade dropdown with all stocks
@@ -2043,7 +2170,7 @@ var NM={
 'NATCOPHARM':'Natco Pharma','GRANULES':'Granules India',
 'APOLLOHOSP':'Apollo Hospitals','FORTIS':'Fortis Healthcare','MAXHEALTH':'Max Healthcare',
 'ASTER':'Aster DM','KIMS':'KIMS Hospitals','MEDPLUS':'MedPlus','VIJAYA':'Vijaya Diagnostic',
-'HEALTHCARE':'Healthcare Global','METROPOLIS':'Metropolis','THYROCARE':'Thyrocare',
+'YATHARTH':'Healthcare Global','METROPOLIS':'Metropolis','THYROCARE':'Thyrocare',
 'NESTLEIND':'Nestle India','BRITANNIA':'Britannia','DABUR':'Dabur','MARICO':'Marico',
 'EMAMILTD':'Emami','COLPAL':'Colgate','GODREJCP':'Godrej Consumer','BAJAJCON':'Bajaj Consumer',
 'RADICO':'Radico Khaitan','UNITDSPR':'United Spirits',
@@ -2052,7 +2179,7 @@ var NM={
 'CERA':'Cera Sanitaryware','ASTRAL':'Astral','AARTIIND':'Aarti Industries',
 'NTPC':'NTPC','POWERGRID':'Power Grid','TATAPOWER':'Tata Power','ADANIPOWER':'Adani Power',
 'CESC':'CESC','TORNTPOWER':'Torrent Power','JSWENERGY':'JSW Energy','GREENKO':'Greenko',
-'RPOWER':'Reliance Power','NHPC':'NHPC',
+'IREDA':'Reliance Power','NHPC':'NHPC',
 'ONGC':'ONGC','BPCL':'BPCL','IOC':'Indian Oil','HINDPETRO':'HPCL','GAIL':'GAIL',
 'PETRONET':'Petronet LNG','CONCOR':'Container Corp','CASTROLIND':'Castrol','GULFOILLUB':'Gulf Oil','THERMAX':'Thermax',
 'TATASTEEL':'Tata Steel','JSWSTEEL':'JSW Steel','HINDALCO':'Hindalco','VEDL':'Vedanta',
@@ -2063,11 +2190,11 @@ var NM={
 'ORIENTCEM':'Orient Cement','DALMIA':'Dalmia Bharat','BIRLACORPN':'Birla Corp',
 'LTTS':'L&T Technology','SIEMENS':'Siemens','ABB':'ABB India','BHEL':'BHEL',
 'CUMMINSIND':'Cummins India','KEC':'KEC International','KALPATPOWR':'Kalpataru Power',
-'APLAPOLLO':'APL Apollo','JINDALSAW':'Jindal Saw','IFCI':'IFCI',
+'APLAPOLLO':'APL Apollo','JINDALSAW':'Jindal Saw','IRFC':'IRFC',
 'DLF':'DLF','GODREJPROP':'Godrej Properties','OBEROIRLTY':'Oberoi Realty',
 'PRESTIGE':'Prestige Estates','BRIGADE':'Brigade Enterprises','SOBHA':'Sobha',
 'MAHLIFE':'Mahindra Lifespace','KOLTEPATIL':'Kolte Patil','SUNTECK':'Sunteck Realty','NESCO':'Nesco',
-'VODAFONE':'Vodafone Idea','TATACOMM':'Tata Communications','STLTECH':'STL Technology',
+'IDEA':'Vodafone Idea','TATACOMM':'Tata Communications','STLTECH':'STL Technology',
 'INDUSTOWER':'Indus Towers','HATHWAY':'Hathway Cable','NETWORK18':'Network18',
 'PIDILITIND':'Pidilite Industries','BERGEPAINT':'Berger Paints','KANSAINER':'Kansai Nerolac',
 'SWARAJENG':'Swaraj Engines','SYNGENE':'Syngene International','ALEMBICPHARM':'Alembic Pharma',
@@ -2075,8 +2202,8 @@ var NM={
 'IPCALAB':'IPCA Laboratories','ASTRAZEN':'AstraZeneca India','PFIZER':'Pfizer India',
 'GLAXO':'GSK Pharma','ABBOTINDIA':'Abbott India',
 'LALPATHLAB':'Dr Lal PathLabs','GREENKO':'Greenko Energy','SJVN':'SJVN',
-'GTL':'GTL','GTLINFRA':'GTL Infra','SITI':'Siti Networks','DIGI':'D-Link India',
-'VIJAYA':'Vijaya Diagnostic','HEALTHCARE':'Healthcare Global','NAZARA':'Nazara Technologies'
+'TEJASNET':'TEJASNET','RAILTEL':'GTL Infra','HFCL':'Siti Networks','DLINKINDIA':'D-Link India',
+'VIJAYA':'Vijaya Diagnostic','YATHARTH':'Healthcare Global','NAZARA':'Nazara Technologies'
 };
 
 var SEC={
@@ -2104,7 +2231,7 @@ var SEC={
 'NATCOPHARM':'Pharma','GRANULES':'Pharma',
 'APOLLOHOSP':'Healthcare','FORTIS':'Healthcare','MAXHEALTH':'Healthcare',
 'ASTER':'Healthcare','KIMS':'Healthcare','MEDPLUS':'Healthcare','VIJAYA':'Healthcare',
-'HEALTHCARE':'Healthcare','METROPOLIS':'Healthcare','THYROCARE':'Healthcare',
+'YATHARTH':'Healthcare','METROPOLIS':'Healthcare','THYROCARE':'Healthcare',
 'NESTLEIND':'FMCG','BRITANNIA':'FMCG','DABUR':'FMCG','MARICO':'FMCG',
 'EMAMILTD':'FMCG','COLPAL':'FMCG','GODREJCP':'FMCG','BAJAJCON':'FMCG',
 'RADICO':'FMCG','UNITDSPR':'FMCG',
@@ -2113,7 +2240,7 @@ var SEC={
 'CERA':'Consumer','ASTRAL':'Consumer','AARTIIND':'Chemicals',
 'NTPC':'Energy','POWERGRID':'Energy','TATAPOWER':'Energy','ADANIPOWER':'Energy',
 'CESC':'Energy','TORNTPOWER':'Energy','JSWENERGY':'Energy','GREENKO':'Energy',
-'RPOWER':'Energy','NHPC':'Energy',
+'IREDA':'Energy','NHPC':'Energy',
 'ONGC':'Energy','BPCL':'Energy','IOC':'Energy','HINDPETRO':'Energy','GAIL':'Energy',
 'PETRONET':'Energy','CONCOR':'Infra','CASTROLIND':'Energy','GULFOILLUB':'Energy','THERMAX':'Capital Goods',
 'TATASTEEL':'Metals','JSWSTEEL':'Metals','HINDALCO':'Metals','VEDL':'Metals',
@@ -2124,11 +2251,11 @@ var SEC={
 'ORIENTCEM':'Cement','DALMIA':'Cement','BIRLACORPN':'Cement',
 'LTTS':'Capital Goods','SIEMENS':'Capital Goods','ABB':'Capital Goods','BHEL':'Capital Goods',
 'CUMMINSIND':'Capital Goods','KEC':'Capital Goods','KALPATPOWR':'Capital Goods',
-'APLAPOLLO':'Capital Goods','JINDALSAW':'Capital Goods','IFCI':'Finance',
+'APLAPOLLO':'Capital Goods','JINDALSAW':'Capital Goods','IRFC':'Finance',
 'DLF':'Realty','GODREJPROP':'Realty','OBEROIRLTY':'Realty',
 'PRESTIGE':'Realty','BRIGADE':'Realty','SOBHA':'Realty',
 'MAHLIFE':'Realty','KOLTEPATIL':'Realty','SUNTECK':'Realty','NESCO':'Realty',
-'VODAFONE':'Telecom','TATACOMM':'Telecom','STLTECH':'Telecom',
+'IDEA':'Telecom','TATACOMM':'Telecom','STLTECH':'Telecom',
 'INDUSTOWER':'Telecom','HATHWAY':'Media','NETWORK18':'Media',
 'PIDILITIND':'Chemicals','BERGEPAINT':'Consumer','KANSAINER':'Consumer',
 'SWARAJENG':'Auto','SYNGENE':'Pharma','ALEMBICPHARM':'Pharma',
@@ -2136,8 +2263,8 @@ var SEC={
 'IPCALAB':'Pharma','ASTRAZEN':'Pharma','PFIZER':'Pharma',
 'GLAXO':'Pharma','ABBOTINDIA':'Pharma',
 'LALPATHLAB':'Healthcare','GREENKO':'Energy','SJVN':'Energy',
-'GTL':'Telecom','GTLINFRA':'Telecom','SITI':'Media','DIGI':'IT',
-'VIJAYA':'Healthcare','HEALTHCARE':'Healthcare','NAZARA':'Internet'
+'TEJASNET':'Telecom','RAILTEL':'Telecom','HFCL':'Media','DLINKINDIA':'IT',
+'VIJAYA':'Healthcare','YATHARTH':'Healthcare','NAZARA':'Internet'
 };
 
 // Generate ICN (2-letter initials) for all stocks
@@ -2171,13 +2298,13 @@ var BASE={
 'DRREDDY':6800,'CIPLA':1680,'DIVISLAB':5200,'BIOCON':320,'ALKEM':5800,
 'TORNTPHARM':3200,'GLENMARK':1180,'IPCA':1580,'NATCOPHARM':1250,'GRANULES':580,
 'APOLLOHOSP':7200,'FORTIS':680,'MAXHEALTH':980,'ASTER':420,'KIMS':2100,
-'MEDPLUS':650,'VIJAYA':580,'HEALTHCARE':310,'METROPOLIS':1820,'THYROCARE':680,
+'MEDPLUS':650,'VIJAYA':580,'YATHARTH':310,'METROPOLIS':1820,'THYROCARE':680,
 'NESTLEIND':2280,'BRITANNIA':5400,'DABUR':520,'MARICO':585,'EMAMILTD':680,
 'COLPAL':2850,'GODREJCP':1350,'BAJAJCON':280,'RADICO':1680,'UNITDSPR':890,
 'HAVELLS':1750,'VOLTAS':1480,'BLUESTARCO':1920,'WHIRLPOOL':1580,'ORIENTELEC':285,
 'CROMPTON':380,'KAJARIACER':1020,'CERA':7200,'ASTRAL':2200,'AARTIIND':480,
 'NTPC':382,'POWERGRID':320,'TATAPOWER':420,'ADANIPOWER':680,'CESC':185,
-'TORNTPOWER':1350,'JSWENERGY':480,'GREENKO':580,'RPOWER':35,'NHPC':88,
+'TORNTPOWER':1350,'JSWENERGY':480,'GREENKO':580,'IREDA':35,'NHPC':88,
 'ONGC':290,'BPCL':340,'IOC':180,'HINDPETRO':420,'GAIL':225,
 'PETRONET':340,'CONCOR':980,'CASTROLIND':190,'GULFOILLUB':680,'THERMAX':4800,
 'TATASTEEL':165,'JSWSTEEL':920,'HINDALCO':685,'VEDL':475,'NATIONALUM':220,
@@ -2185,17 +2312,17 @@ var BASE={
 'SHREECEM':25000,'ACC':2050,'AMBUJACEMENT':650,'INDIACEM':225,'RAMCOCEM':980,
 'HEIDELBERG':220,'JKCEMENT':3800,'ORIENTCEM':185,'DALMIA':2100,'BIRLACORPN':1180,
 'LTTS':5800,'SIEMENS':7200,'ABB':8500,'BHEL':285,'CUMMINSIND':3900,
-'KEC':820,'KALPATPOWR':1450,'APLAPOLLO':1580,'JINDALSAW':285,'IFCI':25,
+'KEC':820,'KALPATPOWR':1450,'APLAPOLLO':1580,'JINDALSAW':285,'IRFC':25,
 'DLF':875,'GODREJPROP':2800,'OBEROIRLTY':1980,'PRESTIGE':1850,'BRIGADE':1200,
 'SOBHA':1750,'MAHLIFE':620,'KOLTEPATIL':480,'SUNTECK':580,'NESCO':820,
-'VODAFONE':10,'TATACOMM':1850,'STLTECH':240,'INDUSTOWER':380,
+'IDEA':10,'TATACOMM':1850,'STLTECH':240,'INDUSTOWER':380,
 'HATHWAY':28,'NETWORK18':92,
 'PIDILITIND':2850,'BERGEPAINT':580,'KANSAINER':285,'SWARAJENG':2400,
 'SYNGENE':820,'ALEMBICPHARM':950,'AJANTPHARM':2800,'LAURUSLABS':580,'STAR':580,
 'IPCALAB':1580,'ASTRAZEN':6500,'PFIZER':5200,'GLAXO':1850,'ABBOTINDIA':28000,
 'LALPATHLAB':1820,'GREENKO':580,'SJVN':88,
-'GTL':18,'GTLINFRA':2,'SITI':1,'DIGI':35,
-'VIJAYA':580,'HEALTHCARE':310,'NAZARA':1020
+'TEJASNET':18,'RAILTEL':2,'HFCL':1,'DLINKINDIA':35,
+'VIJAYA':580,'YATHARTH':310,'NAZARA':1020
 };
 var IC=['rgba(70,201,138,0.1)','rgba(232,188,105,0.1)','rgba(215,165,142,0.1)','rgba(255,107,107,0.1)'];
 var IT=['var(--emerald)','#B8922A','var(--rose)','var(--sell)'];
@@ -2307,11 +2434,11 @@ async function fetchYahoo(sym){
       'BAJAJ-AUTO':'BAJAJ-AUTO.NS',
       // Stocks with known Yahoo mapping issues — use BSE or alternate
       'GREENKO':'GREENK.BO',
-      'GTL':'GTL.BO',
-      'GTLINFRA':'GTLINFRA.BO',
-      'SITI':'SITI.BO',
-      'DIGI':'DIGI.BO',
-      'HEALTHCARE':'HCGN.BO',
+      'TEJASNET':'GTL.BO',
+      'RAILTEL':'GTLINFRA.BO',
+      'HFCL':'SITI.BO',
+      'DLINKINDIA':'DIGI.BO',
+      'YATHARTH':'HCGN.BO',
       'VIJAYA':'VIJAYABANK.BO',
       'NAZARA':'NAZARA.BO',
       'LALPATHLAB':'LALPATHLAB.NS',
@@ -2361,7 +2488,7 @@ async function fetchYahoo(sym){
       'ORIENTELEC':'ORIENTELEC.NS',
       'BLUESTARCO':'BLUESTARCO.NS',
       'JSWENERGY':'JSWENERGY.NS',
-      'RPOWER':'RPOWER.NS',
+      'IREDA':'IREDA.NS',
       'NHPC':'NHPC.NS',
       'CONCOR':'CONCOR.NS',
       'CASTROLIND':'CASTROLIND.NS',
@@ -2384,8 +2511,9 @@ async function fetchYahoo(sym){
     var r=await fetch(url,{signal:AbortSignal.timeout(12000)});
     var d=await r.json();
     var res=d&&d.chart&&d.chart.result&&d.chart.result[0];
-    // Fallback to BSE if NSE fails
-    if(!res||!res.meta||!res.meta.regularMarketPrice){
+    // Fallback to BSE if NSE fails — check regularMarketPrice OR previousClose
+    var metaCheck=res&&res.meta;
+    if(!metaCheck||((!metaCheck.regularMarketPrice||metaCheck.regularMarketPrice<=0)&&(!metaCheck.previousClose||metaCheck.previousClose<=0))){
       var bUrl='https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+sym+'.BO&range=1y&interval=1d';
       var br=await fetch(bUrl,{signal:AbortSignal.timeout(12000)});
       var bd2=await br.json();
@@ -2404,38 +2532,49 @@ async function fetchYahoo(sym){
     var closes=[], volumes=[], highs=[], lows=[];
     if(res.indicators&&res.indicators.quote&&res.indicators.quote[0]){
       var q=res.indicators.quote[0];
-      if(q.close)  closes  = q.close.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
-      if(q.volume) volumes = q.volume.map(function(v){return (v!=null&&v>0)?v:null;}).filter(Boolean);
-      if(q.high)   highs   = q.high.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
-      if(q.low)    lows    = q.low.map(function(v){return (v!=null&&v>0)?parseFloat(v.toFixed(2)):null;}).filter(Boolean);
+      // Keep OHLCV index-aligned — only include bars where ALL of close/high/low are valid
+      var rawLen = (q.close||[]).length;
+      for(var ri=0;ri<rawLen;ri++){
+        var rc=q.close&&q.close[ri], rh=q.high&&q.high[ri], rl=q.low&&q.low[ri], rv=q.volume&&q.volume[ri];
+        if(rc!=null&&rc>0&&rh!=null&&rh>0&&rl!=null&&rl>0){
+          closes.push(parseFloat(rc.toFixed(2)));
+          highs.push(parseFloat(rh.toFixed(2)));
+          lows.push(parseFloat(rl.toFixed(2)));
+          if(rv!=null&&rv>0) volumes.push(rv); else volumes.push(0);
+        }
+      }
     }
     // Ensure last close = current price
     if(closes.length>0) closes[closes.length-1]=price;
-    // Pad if insufficient
-    if(closes.length<14){
-      var p2=price*0.95;
-      for(var i=closes.length;i<30;i++){p2=p2*(1+(Math.random()-0.48)*0.015);closes.push(parseFloat(p2.toFixed(2)));}
-      closes[closes.length-1]=price;
-    }
+    // If insufficient history, RSI/MACD will default to neutral — do not fabricate closes
 
-    // == REAL RSI (14-period Wilder smoothing) ==
+    // == REAL RSI (14-period full Wilder chain from day 1) ==
     var rsi=50;
     if(closes.length>=15){
-      var gains=0,losses=0;
-      for(var i=closes.length-14;i<closes.length;i++){
-        var diff=closes[i]-closes[i-1];
-        if(diff>0) gains+=diff; else losses+=Math.abs(diff);
+      // Seed: simple average of first 14 gains/losses
+      var avgG=0,avgL=0;
+      for(var i=1;i<=14;i++){
+        var d0=closes[i]-closes[i-1];
+        if(d0>0)avgG+=d0; else avgL+=Math.abs(d0);
       }
-      var avgG=gains/14, avgL=losses/14;
+      avgG/=14; avgL/=14;
+      // Wilder smooth the rest of the full history
+      for(var i=15;i<closes.length;i++){
+        var d0=closes[i]-closes[i-1];
+        var g=d0>0?d0:0, l=d0<0?Math.abs(d0):0;
+        avgG=(avgG*13+g)/14;
+        avgL=(avgL*13+l)/14;
+      }
       rsi=avgL===0?100:parseFloat((100-(100/(1+(avgG/avgL)))).toFixed(1));
     }
 
     // == REAL SMA 20 / 50 / 200 ==
-    var sma20=price, sma50=price*0.97, sma200=price*0.92;
+    var sma20=price, sma50=price, sma200=price; // neutral defaults until real data computed
     if(closes.length>=20)  sma20=parseFloat((closes.slice(-20).reduce(function(a,b){return a+b;},0)/20).toFixed(2));
     if(closes.length>=50)  sma50=parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
     if(closes.length>=200) sma200=parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
-    else if(closes.length>=100) sma200=parseFloat((closes.slice(-100).reduce(function(a,b){return a+b;},0)/closes.slice(-100).length).toFixed(2));
+    // Only compute SMA200 when we actually have 200 bars — never fake it with fewer bars
+    // sma200 stays at price*0.92 fallback if insufficient history
 
     // == REAL MACD (12 EMA - 26 EMA) ==
     function calcEMA(arr, period){
@@ -2449,11 +2588,11 @@ async function fetchYahoo(sym){
       var ema12=calcEMA(closes,12);
       var ema26=calcEMA(closes,26);
       var macdLine=ema12-ema26;
-      // Signal line = 9 EMA of MACD -- approximate using last 9 closes
+      // Signal line = 9 EMA of MACD values computed over FULL history
       var macdValues=[];
-      for(var i=Math.max(0,closes.length-35);i<closes.length;i++){
-        var sl=closes.slice(0,i+1);
-        if(sl.length>=26) macdValues.push(calcEMA(sl,12)-calcEMA(sl,26));
+      for(var i=26;i<=closes.length;i++){
+        var slice=closes.slice(0,i);
+        macdValues.push(calcEMA(slice,12)-calcEMA(slice,26));
       }
       var signalLine=macdValues.length>=9?calcEMA(macdValues,9):macdValues[macdValues.length-1]||0;
       macdBull=macdLine>signalLine;
@@ -2545,18 +2684,17 @@ async function fetchYahooIndices(){
 }
 
 // == MOCK (last resort only) ==
-function mock(sym){
-  var base=BASE[sym]||1000,chg=(Math.random()-0.45)*3,price=base*(1+chg/100);
-  var cl=[];var p=base*0.95;for(var i=0;i<30;i++){p=p*(1+(Math.random()-0.48)*0.02);cl.push(parseFloat(p.toFixed(2)));}cl[29]=parseFloat(price.toFixed(2));
-  return{sym:sym,price:parseFloat(price.toFixed(2)),prev:base,chg:parseFloat(chg.toFixed(2)),high:price*1.01,low:price*0.99,volR:0.8+Math.random()*1.4,atr:base*0.012,closes:cl,isLive:false,rsi:40+Math.random()*30,macd:{bull:Math.random()>0.4},sma50:base*0.96,sma200:base*0.92};
-}
+// mock() removed — synthetic data generation eliminated. Stocks without real prices are excluded from signals.
 
 function enrich(d){
-  if(!d.closes||d.closes.length<2){var cl=[];var p=d.price*0.95;for(var j=0;j<30;j++){p=p*(1+(Math.random()-0.48)*0.015);cl.push(parseFloat(p.toFixed(2)));}cl[29]=d.price;d.closes=cl;}
-  if(!d.rsi){if(d.closes.length>=14){var g=0,l=0;for(var i=d.closes.length-14;i<d.closes.length;i++){var df=d.closes[i]-(d.closes[i-1]||d.closes[i]);df>0?g+=df:l+=Math.abs(df);}d.rsi=parseFloat((100-(100/(1+(g/(l||0.001))))).toFixed(1));}else d.rsi=50;}
-  if(!d.macd)d.macd={bull:d.price>(d.sma50||d.price*0.96)};
-  if(!d.sma50)d.sma50=d.price*0.96;
-  if(!d.sma200)d.sma200=d.price*0.92;
+  // Do NOT fabricate random closes — use flat line at price as neutral placeholder
+  if(!d.closes||d.closes.length<2){var cl=[];for(var j=0;j<14;j++)cl.push(d.price);d.closes=cl;}
+  // RSI: neutral 50 if insufficient data — never random
+  if(!d.rsi) d.rsi=50;
+  // MACD: derive from price vs sma if available, else neutral
+  if(!d.macd)d.macd={bull:d.price>(d.sma50||d.price)};
+  if(!d.sma50)d.sma50=d.price;
+  if(!d.sma200)d.sma200=d.price;
   if(!d.volR)d.volR=1;
   return d;
 }
@@ -2726,92 +2864,109 @@ async function runScan(){
   SD={};SG={};PK=[];
   document.getElementById('loading').style.display='flex';
   var lc=document.getElementById('lchips');lc.innerHTML='';
-  // Only show chips for first 40 to avoid overflow
   ST.slice(0,40).forEach(function(s){var c=document.createElement('span');c.className='lchip';c.id='c_'+s;c.textContent=s;lc.appendChild(c);});
   var moreChip=document.createElement('span');moreChip.className='lchip';moreChip.style.color='var(--muted)';moreChip.textContent='+'+(ST.length-40)+' more';lc.appendChild(moreChip);
 
-  // STEP 1: Fetch indices first
+  // STEP 1: Fetch indices
   setP(2,'Fetching market indices...','NSE/BSE');
   await fetchYahooIndices();
 
-  // STEP 2: Sector-wise parallel scanning — 10 stocks at a time
-  // Group ST into batches of 10
-  var BATCH_SIZE = 10;
-  var batches = [];
-  for(var bi=0; bi<ST.length; bi+=BATCH_SIZE){
-    batches.push(ST.slice(bi, bi+BATCH_SIZE));
-  }
-  var totalBatches = batches.length;
-  var fetched = 0;
-
-  setP(5,'Scanning '+ST.length+' stocks in '+totalBatches+' parallel batches...','Yahoo Finance');
-
-  // Process all batches in parallel (sector-wise)
-  await Promise.all(batches.map(async function(batch, batchIdx){
-    // Fetch all 10 in this batch in parallel
-    await Promise.all(batch.map(async function(sym){
-      var yData = await fetchYahoo(sym);
-      SD[sym] = enrich(yData || mock(sym));
-      var ch = document.getElementById('c_'+sym);
-      if(ch) ch.className = 'lchip '+(yData?'done':'fail');
-    }));
-    fetched += batch.length;
-    var pct = Math.round(5 + (fetched / ST.length) * 40);
-    var sectorName = SEC[batch[0]] || 'stocks';
-    setP(pct, 'Fetched '+fetched+'/'+ST.length+' stocks...', sectorName+' sector done');
-  }));
-
-  var realCount = Object.values(SD).filter(function(d){return d&&d.isYahoo;}).length;
-  var mockCount = ST.length - realCount;
-  setP(46,'Prices ready — '+realCount+' live, '+mockCount+' estimated','');
-  if(realCount < ST.length * 0.5){
-    toast('Warning: only '+realCount+'/'+ST.length+' real prices. Check your connection.','err');
-  } else {
-    toast(realCount+'/'+ST.length+' real prices loaded','ok');
-  }
-
-  // STEP 3: Market mood
-  setP(47,'Reading market mood...','');
-  var mood = await getMood();
-  await sl(100);
-
-  // STEP 4: Generate signals — parallel in batches of 10
-  SG={};PK=[];
-  var sigBatches = [];
-  for(var si=0; si<ST.length; si+=BATCH_SIZE){
-    sigBatches.push(ST.slice(si, si+BATCH_SIZE));
-  }
-  var analysed = 0;
-
-  for(var sbi=0; sbi<sigBatches.length; sbi++){
-    var sbatch = sigBatches[sbi];
-    // Process signals in this batch (sequential within batch for Groq rate limiting)
-    for(var sj=0; sj<sbatch.length; sj++){
-      var sym2 = sbatch[sj];
-      if(!SD[sym2]) continue;
-      var sig = await getSig(sym2, SD[sym2]);
-      SG[sym2] = sig;
-      if(sig.signal !== 'HOLD') PK.push({sym:sym2, signal:sig, data:SD[sym2]});
-      analysed++;
+  // STEP 2: Try Angel One server first
+  setP(3,'Connecting to server...','');
+  var online = await chkSrv();
+  if(online){
+    toast('Server online — using Angel One data','ok');
+    await fetchIdx();
+    setP(15,'Fetching live prices...','Angel One SmartAPI');
+    var bd = await fetchBatch();
+    if(bd){
+      ST.forEach(function(sym){
+        var raw=bd[sym]||null;
+        if(raw&&raw.isLive){SD[sym]=enrich(raw);var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';}
+        else{SD[sym]=null;}
+      });
+      var missing=ST.filter(function(s){return!SD[s];});
+      if(missing.length===0){
+        setP(42,'Live prices ready','Angel One');
+      } else {
+        setP(20,'Filling '+missing.length+' gaps from Yahoo Finance...','');
+        for(var mi=0;mi<missing.length;mi++){
+          var sym=missing[mi];
+          var yData=await fetchYahoo(sym);
+          if(yData){
+          SD[sym]=enrich(yData);
+          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
+        } else {
+          SD[sym]=null;
+          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
+        }
+          setP(20+Math.round((mi/missing.length)*22),'Fetching '+sym+'...','Yahoo Finance');
+          await sl(50);
+        }
+        setP(42,'Prices ready','Angel One + Yahoo Finance');
+      }
+    } else {
+      // Angel One batch failed — fall through to Yahoo
+      online = false;
     }
-    var sPct = Math.round(48 + (analysed/ST.length)*48);
-    setP(sPct, 'Analysing signals... '+analysed+'/'+ST.length,'');
-    // Small pause between batches if Groq is being used
-    if(GK && GK.length > 10) await sl(80);
   }
 
-  // Apply strategy mode filter
-  PK = applyStratMode(PK);
-  PK.sort(function(a,b){return b.signal.confidence - a.signal.confidence;});
+  if(!online){
+    // STEP 2b: Yahoo Finance — sequential, one at a time
+    setP(8,'Fetching prices from Yahoo Finance...','NSE Data');
+    await fetchYahooIndices();
+    var yahooCount=0;
+    for(var yi=0;yi<ST.length;yi++){
+      var sym=ST[yi];
+      var pct=Math.round(8+(yi/ST.length)*34);
+      setP(pct,'Fetching '+sym+'...','Yahoo Finance');
+      var yData=await fetchYahoo(sym);
+      if(yData){
+        SD[sym]=enrich(yData);
+        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
+        yahooCount++;
+      } else {
+        SD[sym]=null; // No real data — exclude from signals entirely
+        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
+      }
+      await sl(50);
+    }
+    if(yahooCount>0){
+      setP(42,'Prices ready','Yahoo Finance ('+yahooCount+'/'+ST.length+' stocks)');
+      toast('Yahoo Finance: '+yahooCount+'/'+ST.length+' real prices loaded','ok');
+    } else {
+      setP(42,'Using estimates — check internet connection','');
+      toast('Could not fetch real prices — using estimates','err');
+    }
+  }
 
-  setP(100, 'Scan complete!', PK.length+' signals across '+ST.length+' stocks');
-  await sl(500);
+  setP(44,'Reading market mood...','');
+  var mood=await getMood();
+  await sl(150);
+
+  // STEP 3: Generate signals sequentially
+  SG={};PK=[];
+  for(var j=0;j<ST.length;j++){
+    var s=ST[j];
+    if(!SD[s])continue;
+    setP(46+Math.round((j/ST.length)*50),'Analysing '+( NM[s]||s)+'...','');
+    var sig=await getSig(s,SD[s]);
+    SG[s]=sig;
+    if(sig.signal!=='HOLD')PK.push({sym:s,signal:sig,data:SD[s]});
+    await sl(80);
+  }
+
+  PK=applyStratMode(PK);
+  PK.sort(function(a,b){return b.signal.confidence-a.signal.confidence;});
+
+  setP(100,'Scan complete!',PK.length+' signals found');
+  await sl(600);
   document.getElementById('loading').style.display='none';
   rAll(mood);
 
-  var now=new Date(), ts=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  var now=new Date(),ts=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   document.getElementById('lastSc').textContent=ts;
-  var liveCount=Object.values(SD).filter(function(d){return d&&d.isYahoo;}).length;
+  var liveCount=Object.values(SD).filter(function(d){return d&&d.isYahoo||d&&d.isLive;}).length;
   var freshEl=document.getElementById('freshT');
   if(freshEl){
     freshEl.textContent=ts+' ['+liveCount+' Live]';
@@ -2820,6 +2975,7 @@ async function runScan(){
   document.getElementById('scanSt').textContent=PK.length+' signals';
   document.getElementById('sm1').textContent=ST.length+' stocks';
   document.getElementById('qa4').textContent=ST.length;
+  toast(PK.length+' signals ready!','ok');
 }
 
 function rAll(mood){rHero();rPicks();rMood(mood);rHWL();fP('all');rWLFull();rReports();rWLCounts();rQA();}
@@ -6947,10 +7103,7 @@ pg = function(name, el) {
   }, { passive: true });
 })();
 
-// Production: suppress console errors on mobile in production
-if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-  window.onerror = function(){ return true; };
-}
+// Error suppression removed — errors should surface for debugging
 </script>
 
 <!-- ══ PHASE 16: MARKET INTELLIGENCE + FIRST STEP TOWARD AUTONOMY ══ -->
@@ -7496,18 +7649,33 @@ function dttExit() {
   toast('Smart move. Capital preserved for better opportunities ahead. 🛡', 'ok');
 }
 
-// ── Hook into launchBtn to capture capital ──
-(function() {
-  var btn = document.getElementById('launchBtn');
-  if (!btn) return;
-  btn.addEventListener('click', function() {
-    var capVal = parseFloat((document.getElementById('setupCapital') || {}).value);
-    if (capVal && capVal >= 1000) {
-      USER_CAPITAL = capVal;
-      try { localStorage.setItem('s_capital', capVal.toString()); } catch(e) {}
-    }
-  }, true);
+// ── Hook into launchBtn — capture Upstox key + capital ──
+(function(){
+  var btn=document.getElementById('launchBtn');
+  if(!btn)return;
+  btn.addEventListener('click',function(){
+    var capVal=parseFloat((document.getElementById('setupCapital')||{}).value);
+    if(capVal&&capVal>=1000){USER_CAPITAL=capVal;try{localStorage.setItem('s_capital',capVal.toString());}catch(e){}}
+    var upKey=(document.getElementById('setupUpstoxKey')||{}).value||'';
+    if(upKey&&upKey.length>5){UPSTOX_API_KEY=upKey;try{localStorage.setItem('upstox_api_key',upKey);}catch(e){}}
+  },true);
 })();
+
+// Capital helpers for settings page
+function sSetCapPreset(val,el){
+  document.querySelectorAll('#page-settings .cap-preset').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  var inp=document.getElementById('sCapital');if(inp)inp.value=val;
+}
+function saveCapitalFromSettings(){
+  var val=parseFloat((document.getElementById('sCapital')||{}).value);
+  if(!val||val<1000){toast('Enter a valid capital (min ₹1,000)','err');return;}
+  USER_CAPITAL=val;
+  try{localStorage.setItem('s_capital',val.toString());}catch(e){}
+  p17UpdateCapPill();
+  toast('Capital saved — ₹'+val.toLocaleString('en-IN'),'ok');
+  if(typeof PK!=='undefined'&&PK.length)p17RenderHeroPositionSize();
+}
 
 // ── Hook into launch() ──
 var _p17OrigLaunch = launch;
@@ -7535,13 +7703,203 @@ window.addEventListener('load', function() {
     try {
       var saved = localStorage.getItem('s_capital');
       if (saved) { var p = parseFloat(saved); if (p >= 1000) { USER_CAPITAL = p; p17UpdateCapPill(); } }
-      var capInp = document.getElementById('setupCapital');
-      if (capInp && USER_CAPITAL !== 100000) capInp.value = USER_CAPITAL;
     } catch(e) {}
     // Live preview for capital modal input
     var cmi = document.getElementById('capModalInput');
     if (cmi) cmi.addEventListener('input', function(){ p17UpdateCalcPreview(parseFloat(this.value)); });
   }, 300);
+});
+</script>
+
+<!-- ══ PHASE 18: REAL-TIME DATA + TRUST DASHBOARD ══ -->
+<script>
+var UPSTOX_API_KEY='', UPSTOX_TOKEN=null, P18_DATA_SOURCE='delayed';
+
+function p18ConnectUpstox(){
+  var key=(document.getElementById('sUpstoxKey')||{}).value||'';
+  if(!key){try{key=localStorage.getItem('upstox_api_key')||'';}catch(e){}}
+  if(!key||key.length<5){toast('Enter your Upstox API Key first','err');return;}
+  UPSTOX_API_KEY=key;
+  try{localStorage.setItem('upstox_api_key',key);}catch(e){}
+  var redirectUri=encodeURIComponent('https://soumay0725.github.io/Samridhi-AI/');
+  var authUrl='https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id='+encodeURIComponent(key)+'&redirect_uri='+redirectUri;
+  toast('Redirecting to Upstox login...','ok');
+  setTimeout(function(){window.location.href=authUrl;},800);
+}
+
+function p18HandleOAuthCallback(){
+  var params=new URLSearchParams(window.location.search);
+  var code=params.get('code');
+  if(!code)return;
+  window.history.replaceState({},document.title,window.location.pathname);
+  // Store auth code — note: this is NOT yet an access token
+  // Token exchange requires a backend server (Phase 23)
+  // For now we store it and mark as "connecting" — badge shows LIVE only after verified API call
+  try{localStorage.setItem('upstox_code',code);localStorage.setItem('upstox_connected_at',Date.now().toString());}catch(e){}
+  UPSTOX_TOKEN=code;
+  P18_DATA_SOURCE='connecting'; // Not yet verified live
+  p18UpdateConnectionUI(false); // Keep badge as DELAYED until verified
+  toast('Upstox authorised — connect in Settings to activate live prices.','ok');
+}
+
+function p18UpdateConnectionUI(connected){
+  var btn=document.getElementById('upstoxConnectBtn');
+  var dot=document.getElementById('upstoxStatusDot');
+  var txt=document.getElementById('upstoxStatusText');
+  var badge=document.getElementById('dataBadge');
+  var badgeTxt=document.getElementById('dataBadgeText');
+  var btnTxt=document.getElementById('upstoxBtnText');
+  if(connected){
+    if(btn)btn.classList.add('connected');
+    if(btnTxt)btnTxt.textContent='✓ Upstox Authorised';
+    if(dot)dot.className='upstox-status-dot delayed';
+    if(txt)txt.textContent='Upstox authorised — live prices activate on next scan';
+    if(badge){badge.className='data-badge delayed';badgeTxt.textContent='AUTHORISED';}
+    P18_DATA_SOURCE='connecting';
+  } else {
+    if(btn)btn.classList.remove('connected');
+    if(btnTxt)btnTxt.textContent='Connect Upstox for Live Prices';
+    if(dot)dot.className='upstox-status-dot delayed';
+    if(txt)txt.textContent='Not connected — using Yahoo Finance (15-min delayed)';
+    if(badge){badge.className='data-badge delayed';badgeTxt.textContent='DELAYED';}
+    P18_DATA_SOURCE='delayed';
+  }
+}
+
+function p18CalcTrustScore(){
+  var score=0, reasons=[];
+  // Data quality (30pts)
+  var liveCount=Object.values(SD).filter(function(d){return d&&(d.isYahoo||d.isLive);}).length;
+  // Data quality — based only on verified real prices from Yahoo/Upstox
+  var ds=Math.round((liveCount/Math.max(ST.length,1))*30);score+=ds;
+  reasons.push(liveCount+'/'+Math.max(ST.length,1)+' verified real prices');
+  // Win rate (25pts)
+  var outcomes=[];try{outcomes=JSON.parse(localStorage.getItem('samridhi_outcomes')||'[]');}catch(e){}
+  var recent=outcomes.filter(function(o){return o.ts&&Date.now()-o.ts<30*24*3600*1000;});
+  if(recent.length>=5){var wins=recent.filter(function(o){return o.result==='target';}).length;score+=Math.round((wins/recent.length)*25);reasons.push(Math.round(wins/recent.length*100)+'% win rate');}
+  else{reasons.push('Insufficient data for win rate (<5 outcomes)');} // No points without evidence
+  // Confidence quality (25pts)
+  var sigKeys=Object.keys(SG);
+  if(sigKeys.length>0){var ac=sigKeys.reduce(function(s,k){return s+(SG[k].confidence||0);},0)/sigKeys.length;score+=Math.max(0,Math.round(((ac-50)/50)*25));reasons.push('Avg conf '+Math.round(ac)+'%');}
+  // Scan freshness (20pts)
+  var ls=document.getElementById('lastSc');
+  if(ls&&ls.textContent&&ls.textContent!=='--'){score+=20;reasons.push('Fresh scan');}
+  return{score:Math.max(0,Math.min(100,score)),reasons:reasons};
+}
+
+function p18RenderTrustScore(){
+  var numEl=document.getElementById('trustScoreNum');
+  var subEl=document.getElementById('trustScoreSub');
+  var badgeEl=document.getElementById('trustBadge');
+  var circleEl=document.getElementById('trustRingCircle');
+  if(!numEl)return;
+  var ts=p18CalcTrustScore();
+  var s=ts.score;
+  if(circleEl){
+    circleEl.style.strokeDashoffset=188.5-(s/100)*188.5;
+    circleEl.style.stroke=s>=70?'var(--emerald)':s>=45?'#B8922A':'var(--sell)';
+  }
+  numEl.textContent=s;
+  subEl.textContent=ts.reasons.slice(0,2).join(' · ');
+  if(s>=70){badgeEl.textContent='✦ STRONG';badgeEl.className='trust-badge strong';}
+  else if(s>=45){badgeEl.textContent='◆ BUILDING';badgeEl.className='trust-badge building';}
+  else{badgeEl.textContent='◇ LIMITED';badgeEl.className='trust-badge limited';}
+}
+
+function p18RenderPerformance(){
+  var outcomes=[];try{outcomes=JSON.parse(localStorage.getItem('samridhi_outcomes')||'[]');}catch(e){}
+  var cutoff=Date.now()-30*24*3600*1000;
+  var recent=outcomes.filter(function(o){return o.ts&&o.ts>cutoff;});
+  var sigEl=document.getElementById('perfSignals'),hitEl=document.getElementById('perfHits');
+  var wrEl=document.getElementById('perfWinRate'),retEl=document.getElementById('perfAvgReturn');
+  var perEl=document.getElementById('perfPeriod');
+  if(!sigEl)return;
+  if(!recent.length){sigEl.textContent='–';hitEl.textContent='–';wrEl.textContent='–';retEl.textContent='–';if(perEl)perEl.textContent='No data yet';return;}
+  var wins=recent.filter(function(o){return o.result==='target';});
+  var wr=Math.round(wins.length/recent.length*100);
+  var ar=wins.length?(wins.reduce(function(s,o){return s+(o.retPct||0);},0)/wins.length).toFixed(1):'0.0';
+  sigEl.textContent=recent.length;hitEl.textContent=wins.length;wrEl.textContent=wr+'%';retEl.textContent='+'+ar+'%';
+  if(perEl)perEl.textContent='Last 30 days';
+  hitEl.className='perf-val '+(wins.length>0?'green':'');
+  retEl.className='perf-val '+(parseFloat(ar)>0?'green':'red');
+}
+
+function p18RenderPlainMood(mood){
+  var el=document.getElementById('p18PlainMood');
+  var iconEl=document.getElementById('p18MoodIcon');
+  var txtEl=document.getElementById('p18MoodText');
+  if(!el||!mood)return;
+  var ms=(mood.mood||'').toLowerCase();
+  var fi=mood.fearIndex||50;
+  var text,icon,cls;
+  if(ms.indexOf('bull')>-1||fi<40){
+    icon='🌱';cls='plain-mood bullish';
+    text=fi<25?'Strong buying momentum — conditions are favourable today.':'Market is leaning positive — good day to look for entries.';
+  } else if(ms.indexOf('bear')>-1||fi>65){
+    icon='⚠️';cls='plain-mood bearish';
+    text=fi>80?'Market under heavy selling pressure. Avoid new positions today.':'Market is nervous today. Be cautious and wait for clarity.';
+  } else {
+    icon='🌤';cls='plain-mood neutral';
+    text='Market is mixed — no strong direction. Wait for a clearer signal before acting.';
+  }
+  el.className=cls;iconEl.textContent=icon;txtEl.textContent=text;el.style.display='block';
+}
+
+function p18UpdateDataBadge(){
+  var lc=Object.values(SD).filter(function(d){return d&&(d.isYahoo||d.isLive);}).length;
+  var badge=document.getElementById('dataBadge'),bt=document.getElementById('dataBadgeText');
+  if(!badge)return;
+  // Only show LIVE when confirmed by successful Upstox API call — not just OAuth code
+  if(P18_DATA_SOURCE==='verified_live'){badge.className='data-badge live';bt.textContent='LIVE';}
+  else if(lc>ST.length*0.7){badge.className='data-badge delayed';bt.textContent=lc+'/'+ST.length+' REAL';}
+  else{badge.className='data-badge delayed';bt.textContent='DELAYED';}
+}
+
+// Hook into rAll
+var _p18OrigRAll=rAll;
+rAll=function(mood){
+  _p18OrigRAll(mood);
+  p18RenderPlainMood(mood);
+  p18UpdateDataBadge();
+  setTimeout(function(){p18RenderTrustScore();p18RenderPerformance();},300);
+};
+
+// Hook into saveS
+var _p18OrigSaveS=saveS;
+saveS=function(){
+  _p18OrigSaveS();
+  var key=(document.getElementById('sUpstoxKey')||{}).value;
+  if(key&&key.length>5){UPSTOX_API_KEY=key;try{localStorage.setItem('upstox_api_key',key);}catch(e){}}
+};
+
+// Init
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    p18HandleOAuthCallback();
+    try{
+      var sk=localStorage.getItem('upstox_api_key');
+      if(sk){
+        UPSTOX_API_KEY=sk;
+        var ki=document.getElementById('sUpstoxKey');if(ki)ki.value=sk;
+        var si=document.getElementById('setupUpstoxKey');if(si)si.value=sk;
+      }
+      // Load capital into settings
+      var sc=localStorage.getItem('s_capital');
+      if(sc){var scv=parseFloat(sc);if(scv>=1000){var ci=document.getElementById('sCapital');if(ci)ci.value=scv;}}
+      var code=localStorage.getItem('upstox_code');
+      var cat=localStorage.getItem('upstox_connected_at');
+      if(code&&cat&&(Date.now()-parseInt(cat))<8*3600*1000){
+        UPSTOX_TOKEN=code;
+        // Don't mark as live — token exchange not done, verify on first scan
+        p18UpdateConnectionUI(false);
+      } else {
+        if(code){try{localStorage.removeItem('upstox_code');localStorage.removeItem('upstox_connected_at');}catch(e){}}
+        p18UpdateConnectionUI(false);
+      }
+    }catch(e){}
+    p18RenderPerformance();
+    p18RenderTrustScore();
+  },500);
 });
 </script>
 </body>
