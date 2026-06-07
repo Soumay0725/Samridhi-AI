@@ -9207,28 +9207,7 @@ renderOutcomePage = function() {
     }
   }, 100);
 };
-
-// ── Hook into pg to add Recovery badge to nav ───────────
-var _p20OrigPg = pg;
-pg = function(name, el) {
-  _p20OrigPg(name, el);
-  if (name === 'outcomes') {
-    setTimeout(function() {
-      if (!document.getElementById('p20MonthlyBtn')) {
-        var ocBtns = document.getElementById('ocBtns');
-        if (ocBtns) {
-          var btn = document.createElement('button');
-          btn.id = 'p20MonthlyBtn';
-          btn.className = 'btn-s';
-          btn.style.cssText = 'background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.25);';
-          btn.innerHTML = '📊 Monthly Report';
-          btn.onclick = p20MonthlyReport;
-          ocBtns.appendChild(btn);
-        }
-      }
-    }, 200);
-  }
-};
+// (duplicate pg hook removed — already registered at line 8814)
 
 // ── Recovery Mode notice on Home page scan button ───────
 function p20GetRiskPercent() {
