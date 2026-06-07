@@ -8864,19 +8864,7 @@ function p20Load() {
   } catch(e) {}
 }
 
-// ── Auto-save signals after every scan ─────────────────
-// Hook into the existing rAll function
-var _p20OrigRAll = rAll;
-rAll = function(mood) {
-  _p20OrigRAll(mood);
-  setTimeout(function() {
-    p20AutoSaveSignals();
-    p20AutoMarkOutcomes();
-    p20CheckRecoveryMode();
-    p20CheckCapitalMilestones();
-    p20UpdateRecoveryBanner();
-  }, 800);
-};
+// (duplicate rAll hook removed — Phase 20 hook already registered above)
 
 function p20AutoSaveSignals() {
   if (!Object.keys(SG).length) return;
