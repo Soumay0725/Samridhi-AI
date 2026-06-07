@@ -9281,11 +9281,12 @@ window.p20GetRiskPercent    = p20GetRiskPercent;
 /* The bottom sheet */
 #confScaleSheet {
   position: fixed; inset: 0; z-index: 99999;
-  display: flex; align-items: flex-end; justify-content: center;
-  background: rgba(0,0,0,0; pointer-events: none;
+  display: none; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0); pointer-events: none;
   transition: background 0.25s;
 }
 #confScaleSheet.open {
+  display: flex;
   background: rgba(0,0,0,0.55); pointer-events: all;
 }
 #confScaleInner {
