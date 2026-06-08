@@ -2990,39 +2990,37 @@ async function runScan(){
   setP(3,'Connecting to server...','');
   var online = await chkSrv();
   if(online){
-    toast('Server online — using Angel One data','ok');
-    await fetchIdx();
-    setP(15,'Fetching live prices...','Angel One SmartAPI');
-    var bd = await fetchBatch();
-    if(bd){
-      ST.forEach(function(sym){
-        var raw=bd[sym]||null;
-        if(raw&&raw.isLive){SD[sym]=enrich(raw);var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';}
-        else{SD[sym]=null;}
+    // Angel One is "online" but we always use Samridhi Server for full 200-stock batch
+    // Angel One only has partial data — use Samridhi Server to fill all gaps fast
+    setP(8,'Connecting to Samridhi Server...','⚡ Fast Mode');
+    var serverOk = await p23CheckServer();
+
+    if(serverOk){
+      var batchResults = await p23BatchFetch(ST, function(pct, msg){
+        setP(pct, msg, '⚡ Samridhi Server');
       });
-      var missing=ST.filter(function(s){return!SD[s];});
-      if(missing.length===0){
-        setP(42,'Live prices ready','Angel One');
+      if(batchResults){
+        var yahooCount = 0;
+        ST.forEach(function(sym){
+          if(batchResults[sym]){
+            SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
+            var ch = document.getElementById('c_'+sym);
+            if(ch) ch.className='lchip done';
+            yahooCount++;
+          } else {
+            SD[sym] = null;
+            var ch = document.getElementById('c_'+sym);
+            if(ch) ch.className='lchip fail';
+          }
+        });
+        setP(82,'Prices ready','⚡ Samridhi Server ('+yahooCount+'/'+ST.length+' stocks)');
+        toast('⚡ Fast Mode: '+yahooCount+' stocks fetched in parallel','ok');
+        online = true; // mark done
       } else {
-        setP(20,'Filling '+missing.length+' gaps from Yahoo Finance...','');
-        for(var mi=0;mi<missing.length;mi++){
-          var sym=missing[mi];
-          var yData=await fetchYahoo(sym);
-          if(yData){
-          SD[sym]=enrich(yData);
-          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
-        } else {
-          SD[sym]=null;
-          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
-        }
-          setP(20+Math.round((mi/missing.length)*22),'Fetching '+sym+'...','Yahoo Finance');
-          await sl(50);
-        }
-        setP(42,'Prices ready','Angel One + Yahoo Finance');
+        online = false; // server batch failed, fall to Yahoo
       }
     } else {
-      // Angel One batch failed — fall through to Yahoo
-      online = false;
+      online = false; // server offline, fall to Yahoo
     }
   }
 
@@ -3041,7 +3039,7 @@ async function runScan(){
         var yahooCount = 0;
         ST.forEach(function(sym){
           if(batchResults[sym]){
-            SD[sym] = enrich(batchResults[sym]);
+            SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
             var ch = document.getElementById('c_'+sym);
             if(ch) ch.className='lchip done';
             yahooCount++;
@@ -11054,6 +11052,118 @@ window.p22ShowNewsDetail  = p22ShowNewsDetail;
 </script>
 <!-- ══ END PHASE 22 ══ -->
 
+
+// ── p23ComputeIndicators: compute RSI/MACD/SMA/ATR/Bollinger from raw server data ──
+function p23ComputeIndicators(d) {
+  if (!d || !d.price) return d;
+  var closes  = d.closes  || [];
+  var highs   = d.highs   || [];
+  var lows    = d.lows    || [];
+  var volumes = d.volumes || [];
+
+  // RSI (Wilder 14-period)
+  var rsi = 50;
+  if (closes.length >= 15) {
+    var gains = 0, losses = 0;
+    for (var i = 1; i <= 14; i++) {
+      var diff = closes[i] - closes[i-1];
+      if (diff >= 0) gains += diff; else losses -= diff;
+    }
+    var avgG = gains / 14, avgL = losses / 14;
+    for (var i = 15; i < closes.length; i++) {
+      var diff = closes[i] - closes[i-1];
+      if (diff >= 0) { avgG = (avgG*13 + diff)/14; avgL = (avgL*13)/14; }
+      else           { avgG = (avgG*13)/14; avgL = (avgL*13 - diff)/14; }
+    }
+    rsi = avgL === 0 ? 100 : parseFloat((100-(100/(1+(avgG/avgL)))).toFixed(1));
+  }
+
+  // SMAs
+  var sma20=0, sma50=0, sma200=0;
+  if (closes.length >= 20)  sma20  = parseFloat((closes.slice(-20).reduce(function(a,b){return a+b;},0)/20).toFixed(2));
+  if (closes.length >= 50)  sma50  = parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
+  if (closes.length >= 200) sma200 = parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
+
+  // MACD
+  var macdBull = false;
+  if (closes.length >= 26) {
+    var calcEMALocal = function(arr, period) {
+      var k = 2/(period+1), ema = arr[0];
+      for (var i = 1; i < arr.length; i++) ema = arr[i]*k + ema*(1-k);
+      return ema;
+    };
+    var ema12 = calcEMALocal(closes, 12);
+    var ema26 = calcEMALocal(closes, 26);
+    var macdLine = ema12 - ema26;
+    var macdVals = [];
+    for (var i = 26; i <= closes.length; i++) {
+      var sl = closes.slice(0, i);
+      macdVals.push(calcEMALocal(sl, 12) - calcEMALocal(sl, 26));
+    }
+    var signalLine = macdVals.length >= 9 ? calcEMALocal(macdVals, 9) : (macdVals[macdVals.length-1]||0);
+    macdBull = macdLine > signalLine;
+  } else {
+    macdBull = sma20 > sma50;
+  }
+
+  // Volume ratio
+  var volR = 0.9;
+  var todayVol = d.volume || 0;
+  if (volumes.length >= 20 && todayVol > 0) {
+    var avgVol20 = volumes.slice(-20).reduce(function(a,b){return a+b;},0) / 20;
+    volR = avgVol20 > 0 ? parseFloat((todayVol/avgVol20).toFixed(2)) : 0.9;
+  }
+  volR = Math.max(0.1, Math.min(5, volR));
+
+  // ATR (14-period)
+  var atr = d.price * 0.012;
+  if (highs.length >= 14 && lows.length >= 14 && closes.length >= 15) {
+    var trSum = 0;
+    for (var i = 1; i < highs.length && i < lows.length && i < closes.length; i++) {
+      var prev = closes[i-1];
+      var tr = Math.max(highs[i]-lows[i], Math.abs(highs[i]-prev), Math.abs(lows[i]-prev));
+      trSum += tr;
+    }
+    atr = parseFloat((trSum / Math.min(14, highs.length-1)).toFixed(2));
+  }
+
+  // Bollinger Band position
+  var bbPos = 0.5;
+  if (closes.length >= 20 && sma20 > 0) {
+    var variance = closes.slice(-20).reduce(function(s,v){return s+Math.pow(v-sma20,2);},0)/20;
+    var stdDev = Math.sqrt(variance);
+    var upper = sma20 + 2*stdDev, lower = sma20 - 2*stdDev;
+    bbPos = upper > lower ? (d.price - lower)/(upper - lower) : 0.5;
+  }
+
+  // Price change %
+  var chg = d.chg || 0;
+
+  return {
+    sym:    d.sym,
+    price:  d.price,
+    chg:    chg,
+    rsi:    rsi,
+    macd:   { bull: macdBull, line: 0 },
+    sma20:  sma20  || d.price,
+    sma50:  sma50  || d.price,
+    sma200: sma200 || d.price,
+    volR:   volR,
+    atr:    atr,
+    bbPos:  bbPos,
+    closes: closes,
+    highs:  highs,
+    lows:   lows,
+    volumes:volumes,
+    volume: d.volume || 0,
+    w52Hi:  d.w52Hi  || null,
+    w52Lo:  d.w52Lo  || null,
+    pe:     d.pe     || null,
+    isLive:   true,
+    isServer: true
+  };
+}
+
 <!-- ══════════════════════════════════════════════════════════
      PHASE 23A — BACKEND SERVER INTEGRATION
      - Routes all stock fetches through Render server
@@ -11220,7 +11330,7 @@ function p23PatchScanIfNeeded() {
           var fetched = 0;
           ST.forEach(function(sym) {
             if (batchResults[sym]) {
-              SD[sym] = enrich(batchResults[sym]);
+              SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
               fetched++;
               var ch = document.getElementById('c_' + sym);
               if (ch) ch.className = 'lchip done';
