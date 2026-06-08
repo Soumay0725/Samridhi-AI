@@ -2232,7 +2232,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 </div>
 
 <script>
-var SRV='https://samridhi-ai.onrender.com';
+var SRV='https://samridhi-ai-new-backend-server.onrender.com'; // Phase 23A — updated to new server
 
 // ══ PHASE 17B: 200 NSE STOCKS ══
 var ST=['RELIANCE','TCS','HDFCBANK','INFY','BHARTIARTL','WIPRO','TATAMOTORS','SBIN','ICICIBANK','BAJFINANCE',
@@ -2533,8 +2533,15 @@ function spark(closes,signal,w,h){
   return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" style="display:block;margin:5px 0;"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+stroke+'" stop-opacity="0.15"/><stop offset="100%" stop-color="'+stroke+'" stop-opacity="0"/></linearGradient></defs><path d="M'+pts.split(' ').join('L')+'L'+(w-2)+','+h+'L0,'+h+'Z" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/></svg>';
 }
 
-async function chkSrv(){try{var r=await fetch(SRV+'/',{signal:AbortSignal.timeout(12000)});var d=await r.json();return d.status==='ok';}catch(e){return false;}}
-async function fetchBatch(){try{var r=await fetch(SRV+'/api/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:ST}),signal:AbortSignal.timeout(35000)});var d=await r.json();return(d.status==='ok'&&d.data)?d.data:null;}catch(e){return null;}}
+async function chkSrv(){try{var r=await fetch(SRV+'/health',{signal:AbortSignal.timeout(8000)});var d=await r.json();return d.status==='ok';}catch(e){return false;}}
+async function fetchBatch(){
+  try {
+    var symsStr = ST.join(',');
+    var r = await fetch(SRV+'/batch?syms='+encodeURIComponent(symsStr), {signal:AbortSignal.timeout(45000)});
+    var d = await r.json();
+    return (d && d.results) ? d.results : null;
+  } catch(e) { return null; }
+}
 async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:AbortSignal.timeout(10000)});var d=await r.json();if(d.status==='ok'){if(d.nifty){document.getElementById('nV').textContent=d.nifty.price.toLocaleString('en-IN');var e=document.getElementById('nC');e.textContent=(d.nifty.chg>=0?' +':' ')+Math.abs(d.nifty.chg).toFixed(2)+'%';e.style.color=d.nifty.chg>=0?'var(--emerald)':'var(--sell)';}if(d.sensex){document.getElementById('sV').textContent=d.sensex.price.toLocaleString('en-IN');var e2=document.getElementById('sC');e2.textContent=(d.sensex.chg>=0?' +':' ')+Math.abs(d.sensex.chg).toFixed(2)+'%';e2.style.color=d.sensex.chg>=0?'var(--emerald)':'var(--sell)';}}}catch(e){}}
 
 // == YAHOO FINANCE REAL PRICE FETCHER (1 year history) ==
@@ -2923,16 +2930,36 @@ function calcScore(dat) {
 
 async function getSig(sym, dat) {
   var scored = calcScore(dat);
-  var reason = '';
-  if (GK && GK.length > 10) {
-    try {
-      var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + scored.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + scored.confidence + '%. Plain text only, max 30 words.';
-      reason = await groq(ep);
-      reason = reason.replace(/[^\x20-\x7E]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
-    } catch(e) { reason = ''; }
-  }
-  if (!reason) reason = fallbackReason(scored.signal, dat);
+  // Use fallback reason during scan — Groq reasons generated async after render
+  var reason = fallbackReason(scored.signal, dat);
   return { signal: scored.signal, confidence: scored.confidence, entry: scored.entry, target: scored.target, stopLoss: scored.stopLoss, horizon: scored.horizon, reason: reason, rr: scored.rr, scoreBreakdown: scored.scores };
+}
+
+// Generate Groq reasons async after scan completes — non-blocking
+async function p23GenerateReasons() {
+  if (!GK || GK.length < 10) return;
+  var signals = PK.slice(0, 15); // Only top 15 signals get Groq reasons
+  for (var i = 0; i < signals.length; i++) {
+    var sym = signals[i].sym;
+    var sig = SG[sym];
+    var dat = SD[sym];
+    if (!sig || !dat || sig.reason && sig.reason.length > 60) continue;
+    try {
+      var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + sig.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + sig.confidence + '%. Plain text only, max 30 words.';
+      var reason = await groq(ep);
+      reason = reason.replace(/[^ -~]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
+      if (reason) {
+        sig.reason = reason;
+        SG[sym].reason = reason;
+        // Update hero card reason if this is top signal
+        if (i === 0) {
+          var hReason = document.getElementById('hReason');
+          if (hReason) hReason.textContent = reason;
+        }
+      }
+    } catch(e) {}
+    await sl(200); // Small delay between Groq calls
+  }
 }
 
 function fb(sym, dat) {
@@ -11177,7 +11204,7 @@ function p23ComputeIndicators(d) {
 // ════════════════════════════════════════════════════════
 
 // ── Server URL — update this after Render deploys ───────
-var SAMRIDHI_SERVER = localStorage.getItem('p23_server_url') || 'https://samridhi-ai-new-backend-server.onrender.com';
+var SAMRIDHI_SERVER = localStorage.getItem('p23_server_url') || SRV; // Always use same server as SRV
 var P23_SERVER_OK   = null;   // null=unknown, true=online, false=offline
 
 // ── Check server health on load ─────────────────────────
@@ -11301,10 +11328,11 @@ var _p23OrigDoScan = typeof doScan === 'function' ? doScan : null;
 var _p23OrigRAll = rAll;
 rAll = function(mood) {
   _p23OrigRAll(mood);
-  // After render, update server badge
+  // After render, update server badge and generate Groq reasons async
   setTimeout(function() {
     p23UpdateServerBadge(P23_SERVER_OK);
-  }, 300);
+    p23GenerateReasons(); // Non-blocking — fills in reasons after scan completes
+  }, 800);
 };
 
 // Hook into the scan function's progress phase to use batch
