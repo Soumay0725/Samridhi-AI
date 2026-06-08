@@ -10271,5 +10271,754 @@ window.p21CheckWeekendGap     = p21CheckWeekendGap;
 </script>
 <!-- ══ END PHASE 21 ══ -->
 
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 22 — COMMUNICATION + EDUCATION LAYER
+     22A: Plain English signal explanations
+     22B: "What Should I Do?" action card
+     22C: Beginner Mode (first-launch prompt + Settings toggle)
+     22E: News Sentiment Filter (Groq — badges only)
+     ══════════════════════════════════════════════════════════ -->
+
+<style>
+/* ── 22C: Beginner Mode prompt overlay ── */
+#p22BeginnerPrompt {
+  display: none;
+  position: fixed; inset: 0; z-index: 99998;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.65);
+}
+#p22BeginnerPrompt.open { display: flex; }
+.p22-bp-card {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 36px 28px;
+  max-width: 360px; width: 92%;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+}
+.p22-bp-emoji { font-size: 52px; margin-bottom: 14px; }
+.p22-bp-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 700; color: var(--navy);
+  margin-bottom: 8px;
+}
+.p22-bp-sub {
+  font-size: 13px; color: var(--muted);
+  line-height: 1.6; margin-bottom: 24px;
+}
+.p22-bp-btn {
+  width: 100%; padding: 14px; border: none;
+  border-radius: 14px; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-bottom: 10px;
+  font-family: 'Sora', sans-serif;
+}
+.p22-bp-btn-yes { background: var(--navy); color: #fff; }
+.p22-bp-btn-no  { background: var(--bg, #f4f4f6); color: var(--navy); }
+
+/* ── 22B: What Should I Do? action card ── */
+.p22-wtd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(70,201,138,0.1);
+  color: var(--emerald);
+  border: 1px solid rgba(70,201,138,0.25);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; margin-top: 10px;
+  font-family: 'Sora', sans-serif;
+}
+.p22-wtd-btn:active { opacity: 0.75; }
+
+/* Action card sheet */
+#p22ActionSheet {
+  display: none;
+  position: fixed; inset: 0; z-index: 99996;
+  align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.55);
+}
+#p22ActionSheet.open { display: flex; }
+#p22ActionInner {
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  padding: 0 0 44px;
+  width: 100%; max-width: 480px;
+  max-height: 88vh; overflow-y: auto;
+  transform: translateY(0);
+}
+.p22-ac-handle {
+  width: 36px; height: 4px;
+  background: var(--border); border-radius: 2px;
+  margin: 14px auto 18px;
+}
+.p22-ac-header { padding: 0 22px 16px; }
+.p22-ac-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700; color: var(--navy);
+  margin-bottom: 4px;
+}
+.p22-ac-stock { font-size: 12px; color: var(--muted); }
+
+/* Step rows */
+.p22-steps { padding: 0 22px; }
+.p22-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.p22-step:last-child { border-bottom: none; }
+.p22-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--navy); color: #fff;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.p22-step-content {}
+.p22-step-label {
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  margin-bottom: 3px;
+}
+.p22-step-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.p22-step-val {
+  display: inline-block;
+  background: var(--bg, #f4f4f6);
+  border-radius: 8px; padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 600;
+  margin-top: 5px;
+}
+.p22-step-val.buy  { color: var(--emerald); background: rgba(70,201,138,0.08); }
+.p22-step-val.sell { color: var(--sell);    background: rgba(255,107,107,0.08); }
+.p22-step-val.warn { color: #B8922A;         background: rgba(232,188,105,0.08); }
+
+/* Plain English explanation box */
+.p22-plain-box {
+  background: rgba(70,201,138,0.05);
+  border: 1px solid rgba(70,201,138,0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 12px; color: var(--muted);
+  line-height: 1.6; margin-top: 10px;
+}
+.p22-plain-box.sell-box {
+  background: rgba(255,107,107,0.05);
+  border-color: rgba(255,107,107,0.15);
+}
+.p22-plain-box.hold-box {
+  background: rgba(232,188,105,0.05);
+  border-color: rgba(232,188,105,0.15);
+}
+
+/* 22A: Plain English chip on hero card */
+.p22-explain-chip {
+  font-size: 11px; color: var(--muted);
+  line-height: 1.55; padding: 8px 12px;
+  background: var(--bg, #f8f8f8);
+  border-radius: 10px; border: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+/* 22E: News badge */
+.p22-news-clear   { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(70,201,138,0.1);color:var(--emerald);border:1px solid rgba(70,201,138,0.2); }
+.p22-news-flagged { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(255,107,107,0.1);color:var(--sell);border:1px solid rgba(255,107,107,0.25);cursor:pointer; }
+.p22-news-loading { display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);padding:3px 9px; }
+
+/* 22C: Beginner mode — simplified chip labels */
+body.beginner-mode .chip { font-size: 11px; }
+body.beginner-mode .conf-lbl { display: none; }
+
+/* Settings toggle */
+.p22-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.p22-toggle-row:last-child { border-bottom: none; }
+.p22-toggle-label { font-size: 13px; color: var(--navy); font-weight: 500; }
+.p22-toggle-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.p22-toggle {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--border); position: relative;
+  cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+  border: none; outline: none;
+}
+.p22-toggle.on { background: var(--emerald); }
+.p22-toggle::after {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.p22-toggle.on::after { left: 23px; }
+</style>
+
+<!-- ── 22C Beginner Mode Prompt ── -->
+<div id="p22BeginnerPrompt">
+  <div class="p22-bp-card">
+    <div class="p22-bp-emoji">👋</div>
+    <div class="p22-bp-title">Welcome, <span id="p22BpName">friend</span>!</div>
+    <div class="p22-bp-sub">Are you new to stock trading? Samridhi can simplify everything — no jargon, just clear steps on what to do.</div>
+    <button class="p22-bp-btn p22-bp-btn-yes" onclick="p22SetBeginnerMode(true)">Yes, keep it simple for me</button>
+    <button class="p22-bp-btn p22-bp-btn-no"  onclick="p22SetBeginnerMode(false)">No, I know trading basics</button>
+  </div>
+</div>
+
+<!-- ── 22B What Should I Do? Sheet ── -->
+<div id="p22ActionSheet" onclick="if(event.target===this)p22CloseAction()">
+  <div id="p22ActionInner">
+    <div class="p22-ac-handle"></div>
+    <div class="p22-ac-header">
+      <div class="p22-ac-title">What Should I Do?</div>
+      <div class="p22-ac-stock" id="p22AcStock">—</div>
+    </div>
+    <div class="p22-steps" id="p22Steps"></div>
+    <div style="padding:20px 22px 0;">
+      <button onclick="p22CloseAction()" style="width:100%;padding:13px;background:var(--bg,#f4f4f6);color:var(--navy);border:none;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Sora',sans-serif;">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  PHASE 22 — COMMUNICATION + EDUCATION LAYER
+// ════════════════════════════════════════════════════════
+
+// ── State ───────────────────────────────────────────────
+var P22_BEGINNER_MODE = false;
+var P22_NEWS_CACHE    = {};   // { SYM: { status:'clear'|'flagged', headline, ts } }
+
+// ── Persistence ─────────────────────────────────────────
+function p22Save() {
+  try {
+    localStorage.setItem('p22_beginner', String(P22_BEGINNER_MODE));
+    localStorage.setItem('p22_news',     JSON.stringify(P22_NEWS_CACHE));
+    localStorage.setItem('p22_prompted', '1');
+  } catch(e) {}
+}
+function p22Load() {
+  try {
+    P22_BEGINNER_MODE = localStorage.getItem('p22_beginner') === 'true';
+    var nc = localStorage.getItem('p22_news');
+    if (nc) P22_NEWS_CACHE = JSON.parse(nc);
+  } catch(e) {}
+}
+function p22HasBeenPrompted() {
+  return !!localStorage.getItem('p22_prompted');
+}
+
+// ════════════════════════════════════════════════════════
+//  22C — BEGINNER MODE
+// ════════════════════════════════════════════════════════
+
+function p22SetBeginnerMode(on) {
+  P22_BEGINNER_MODE = on;
+  p22Save();
+  document.getElementById('p22BeginnerPrompt').classList.remove('open');
+  p22ApplyBeginnerMode();
+  if (on) toast('Beginner Mode on — simple view active', 'ok');
+}
+
+function p22ApplyBeginnerMode() {
+  if (P22_BEGINNER_MODE) {
+    document.body.classList.add('beginner-mode');
+  } else {
+    document.body.classList.remove('beginner-mode');
+  }
+  // Update settings toggle if visible
+  var tog = document.getElementById('p22BeginnerToggle');
+  if (tog) tog.classList.toggle('on', P22_BEGINNER_MODE);
+}
+
+function p22ShowBeginnerPrompt() {
+  var nameEl = document.getElementById('p22BpName');
+  if (nameEl && UN) nameEl.textContent = UN;
+  document.getElementById('p22BeginnerPrompt').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════
+//  22A — PLAIN ENGLISH EXPLANATIONS
+// ════════════════════════════════════════════════════════
+
+function p22PlainEnglish(sym, sig, dat) {
+  if (!sig || !dat) return '';
+  var name  = NM[sym] || sym;
+  var price = dat.price ? '₹' + dat.price.toFixed(0) : '';
+  var rsi   = dat.rsi   ? Math.round(dat.rsi) : null;
+  var isBuy = sig.signal === 'BUY';
+  var isSell= sig.signal === 'SELL';
+
+  // Build plain English sentence
+  var sentences = [];
+
+  // Trend sentence
+  if (isBuy) {
+    if (dat.macd && dat.macd.bull && dat.chg > 1) {
+      sentences.push(name + ' is gaining momentum with buyers stepping in.');
+    } else if (rsi && rsi < 35) {
+      sentences.push(name + ' has fallen sharply and may be ready to bounce back.');
+    } else {
+      sentences.push(name + ' is showing early signs of recovery.');
+    }
+  } else if (isSell) {
+    if (dat.macd && !dat.macd.bull && dat.chg < -1) {
+      sentences.push(name + ' is falling with sellers in control.');
+    } else if (rsi && rsi > 65) {
+      sentences.push(name + ' has risen too fast and may be due for a pullback.');
+    } else {
+      sentences.push(name + ' is losing strength — the uptrend is weakening.');
+    }
+  } else {
+    sentences.push(name + ' has no clear direction right now.');
+  }
+
+  // Volume sentence
+  if (dat.volR && dat.volR > 1.8) {
+    sentences.push('Unusually high trading activity suggests strong conviction behind this move.');
+  } else if (dat.volR && dat.volR < 0.7) {
+    sentences.push('Low trading volume — treat this signal with extra caution.');
+  }
+
+  // RSI sentence
+  if (rsi && rsi < 30) {
+    sentences.push('RSI shows the stock is deeply oversold — historically a good time to consider buying.');
+  } else if (rsi && rsi > 70) {
+    sentences.push('RSI shows the stock is overbought — late buyers often get caught here.');
+  }
+
+  // Action sentence
+  if (isBuy) {
+    sentences.push('Entry at ' + price + ' with a stop loss below ₹' + (sig.stopLoss ? sig.stopLoss.toFixed(0) : '—') + ' to limit downside.');
+  } else if (isSell) {
+    sentences.push('If you hold this stock, consider exiting or placing a tight stop loss at ₹' + (sig.stopLoss ? sig.stopLoss.toFixed(0) : '—') + '.');
+  } else {
+    sentences.push('Wait for a clearer signal before acting.');
+  }
+
+  return sentences.join(' ');
+}
+
+// ════════════════════════════════════════════════════════
+//  22B — WHAT SHOULD I DO?
+// ════════════════════════════════════════════════════════
+
+function p22OpenAction(sym) {
+  var sig = SG[sym];
+  var dat = SD[sym];
+  if (!sig || !dat) { toast('Run a scan first', 'err'); return; }
+
+  var name    = NM[sym] || sym;
+  var isBuy   = sig.signal === 'BUY';
+  var isSell  = sig.signal === 'SELL';
+  var price   = dat.price  ? dat.price.toFixed(0)   : '—';
+  var entry   = sig.entry  ? '₹' + sig.entry.toFixed(0)    : '₹' + price;
+  var target  = sig.target ? '₹' + sig.target.toFixed(0)   : '—';
+  var sl      = sig.stopLoss ? '₹' + sig.stopLoss.toFixed(0) : '—';
+  var horizon = sig.horizon || 'Swing (3-7 days)';
+  var shares  = p22GetShares(sym, sig, dat);
+
+  // Stock label
+  document.getElementById('p22AcStock').textContent = name + ' · ' + sig.signal + ' · ' + horizon;
+
+  var steps = [];
+
+  if (isBuy) {
+    steps = [
+      {
+        label: 'Check the current price',
+        desc:  'Open your broker app (Zerodha / Upstox). Search for ' + sym + '. Current price should be near ' + entry + '.',
+        val:   null
+      },
+      {
+        label: 'Place a BUY order',
+        desc:  'Buy ' + (shares ? shares + ' shares' : 'shares based on your 2% risk rule') + ' at market price or set a limit order at:',
+        val:   entry,
+        cls:   'buy'
+      },
+      {
+        label: 'Set your Stop Loss immediately',
+        desc:  'The moment your order fills, place a stop loss order at this price. This is your maximum loss — do not skip this step:',
+        val:   sl,
+        cls:   'sell'
+      },
+      {
+        label: 'Set a target alert',
+        desc:  'Set a price alert in your broker app for your target price. When it hits, exit your position:',
+        val:   target,
+        cls:   'buy'
+      },
+      {
+        label: 'Do not check the price constantly',
+        desc:  'This is a ' + horizon + ' trade. It may take a few days to play out. Trust the stop loss. Check once a day.',
+        val:   null
+      }
+    ];
+  } else if (isSell) {
+    steps = [
+      {
+        label: 'Do NOT buy this stock',
+        desc:  name + ' is showing weakness. Samridhi is warning you to stay away from buying this stock right now.',
+        val:   '⚠ Avoid buying',
+        cls:   'warn'
+      },
+      {
+        label: 'If you already own this stock',
+        desc:  'Consider exiting your position. If you want to hold, place a strict stop loss at:',
+        val:   sl,
+        cls:   'sell'
+      },
+      {
+        label: 'This is NOT a short sell signal for you',
+        desc:  'Short selling requires a margin account and F&O knowledge. Unless you have that, simply avoid this stock. That is the correct action.',
+        val:   null
+      },
+      {
+        label: 'Wait for a BUY signal',
+        desc:  'Scan again tomorrow or in a few days. When ' + name + ' appears as a BUY, that is your entry opportunity.',
+        val:   null
+      }
+    ];
+  } else {
+    steps = [
+      {
+        label: 'No action needed right now',
+        desc:  name + ' has no strong buy or sell signal at the moment. The indicators are mixed.',
+        val:   null
+      },
+      {
+        label: 'Add to your watchlist',
+        desc:  'Keep an eye on this stock. When a clear BUY or SELL signal appears, Samridhi will show it.',
+        val:   null
+      },
+      {
+        label: 'Do not force a trade',
+        desc:  'One of the most important rules: if there is no signal, there is no trade. Patience protects your capital.',
+        val:   null
+      }
+    ];
+  }
+
+  // Build HTML
+  var html = '';
+  steps.forEach(function(s, i) {
+    var valHTML = s.val ? '<div class="p22-step-val ' + (s.cls||'') + '">' + s.val + '</div>' : '';
+    html += '<div class="p22-step">'
+      + '<div class="p22-step-num">' + (i+1) + '</div>'
+      + '<div class="p22-step-content">'
+      + '<div class="p22-step-label">' + s.label + '</div>'
+      + '<div class="p22-step-desc">'  + s.desc  + '</div>'
+      + valHTML
+      + '</div></div>';
+  });
+
+  // Add plain English explanation at bottom
+  var plain = p22PlainEnglish(sym, sig, dat);
+  if (plain) {
+    html += '<div style="padding:16px 0 0;">'
+      + '<div class="p22-plain-box ' + (isSell ? 'sell-box' : isBuy ? '' : 'hold-box') + '">'
+      + '💡 ' + plain
+      + '</div></div>';
+  }
+
+  document.getElementById('p22Steps').innerHTML = html;
+  document.getElementById('p22ActionSheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function p22CloseAction() {
+  document.getElementById('p22ActionSheet').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function p22GetShares(sym, sig, dat) {
+  // Use existing capital + 2% rule
+  try {
+    var cap = parseFloat(localStorage.getItem('userCapital') || '0');
+    if (!cap) cap = parseFloat((document.getElementById('sCapital')||{}).value || '0');
+    if (!cap || !sig.stopLoss || !sig.entry) return null;
+    var riskAmt = cap * 0.02;
+    var riskPerShare = Math.abs(sig.entry - sig.stopLoss);
+    if (riskPerShare <= 0) return null;
+    return Math.floor(riskAmt / riskPerShare);
+  } catch(e) { return null; }
+}
+
+// ════════════════════════════════════════════════════════
+//  22E — NEWS SENTIMENT FILTER
+// ════════════════════════════════════════════════════════
+
+async function p22CheckNews(sym) {
+  // Return cache if fresh (< 3 hours)
+  var cached = P22_NEWS_CACHE[sym];
+  if (cached && (Date.now() - cached.ts) < 3 * 3600 * 1000) return cached;
+
+  if (!GK || GK.length < 10) return null;
+
+  try {
+    var name = NM[sym] || sym;
+    var prompt = 'You are a financial news checker. For Indian NSE stock "' + name + '" (' + sym + '), check if there is any significant NEGATIVE news in the last 48 hours that would make it dangerous to trade right now.\n\nExamples of dangerous news: fraud, scam, SEBI action, promoter selling, earnings miss, debt default, regulatory ban, major insider selling.\n\nRespond with ONLY a JSON object:\n{"status":"clear","headline":null}\nor\n{"status":"flagged","headline":"<one sentence summary of the concern>"}\n\nNo markdown, no extra text. JSON only.';
+
+    var r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GK },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 80,
+        temperature: 0.1
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+    var d = await r.json();
+    if (d.error) return null;
+    var txt = d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
+    var parsed = JSON.parse(txt);
+    var result = { status: parsed.status || 'clear', headline: parsed.headline || null, ts: Date.now() };
+    P22_NEWS_CACHE[sym] = result;
+    p22Save();
+    return result;
+  } catch(e) { return null; }
+}
+
+function p22NewsBadgeHTML(sym) {
+  var cached = P22_NEWS_CACHE[sym];
+  if (!cached) return '<span class="p22-news-loading">📰 Checking news...</span>';
+  if (cached.status === 'flagged') {
+    return '<span class="p22-news-flagged" title="' + (cached.headline||'Negative news detected') + '" onclick="p22ShowNewsDetail(\'' + sym + '\')">'
+      + '⚠ News Flagged — tap for details</span>';
+  }
+  return '<span class="p22-news-clear">✓ News Clear</span>';
+}
+
+function p22ShowNewsDetail(sym) {
+  var cached = P22_NEWS_CACHE[sym];
+  if (!cached || !cached.headline) return;
+  var name = NM[sym] || sym;
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99997;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.55);';
+  overlay.innerHTML = '<div style="background:var(--card);border-radius:22px 22px 0 0;padding:28px 22px 44px;width:100%;max-width:480px;">'
+    + '<div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;"></div>'
+    + '<div style="font-size:14px;font-weight:700;color:var(--sell);margin-bottom:8px;">⚠ News Flagged — ' + name + '</div>'
+    + '<div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;">' + cached.headline + '</div>'
+    + '<div style="font-size:11px;color:var(--muted);background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.15);border-radius:10px;padding:10px 12px;margin-bottom:20px;">This is an AI-generated assessment based on Groq\'s training data, not a live news feed. Always verify before acting.</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="width:100%;padding:12px;background:var(--bg,#f4f4f6);color:var(--navy);border:none;border-radius:12px;font-size:14px;cursor:pointer;font-family:\'Sora\',sans-serif;">Close</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── Hook into rAll — inject WTD button + news check after scan ──
+var _p22OrigRAll = rAll;
+rAll = function(mood) {
+  _p22OrigRAll(mood);
+  setTimeout(function() {
+    p22InjectHeroElements();
+    p22FetchNewsForTopSignals();
+  }, 500);
+};
+
+function p22InjectHeroElements() {
+  // Find hero card action area
+  var scanBtn = document.querySelector('#page-home .scan-btn, #page-home button[onclick*="scan"], #hBtns');
+  var heroCard = document.querySelector('#page-home .hero-card, #page-home .h-card, .hero-section');
+
+  // Inject WTD button near Scan Markets button
+  if (!document.getElementById('p22WtdBtn') && PK.length) {
+    var sym = PK[0].sym;
+    var btn = document.createElement('button');
+    btn.id = 'p22WtdBtn';
+    btn.className = 'p22-wtd-btn';
+    btn.innerHTML = '🤔 What Should I Do?';
+    btn.onclick = function() { p22OpenAction(sym); };
+
+    // Try to insert after the "I Bought This" button or scan button
+    var iBought = document.querySelector('[onclick*="iBought"], [onclick*="p19Mark"]');
+    if (iBought && iBought.parentElement) {
+      iBought.parentElement.insertBefore(btn, iBought.nextSibling);
+    } else {
+      // Fallback: insert after signal info box
+      var sigBox = document.getElementById('hSigBox') || document.getElementById('hChips');
+      if (sigBox && sigBox.parentElement) sigBox.parentElement.appendChild(btn);
+    }
+  } else if (document.getElementById('p22WtdBtn') && PK.length) {
+    // Update sym on rescan
+    var sym2 = PK[0].sym;
+    document.getElementById('p22WtdBtn').onclick = function() { p22OpenAction(sym2); };
+  }
+
+  // Inject plain English explanation below chips
+  if (PK.length) {
+    var sym3 = PK[0].sym;
+    var sig3 = PK[0].signal;
+    var dat3 = SD[sym3];
+    var plain = p22PlainEnglish(sym3, sig3, dat3);
+    var existing = document.getElementById('p22HeroExplain');
+
+    if (plain) {
+      if (!existing) {
+        existing = document.createElement('div');
+        existing.id = 'p22HeroExplain';
+        existing.className = 'p22-explain-chip';
+        var chipsEl = document.getElementById('hChips');
+        if (chipsEl && chipsEl.parentElement) {
+          chipsEl.parentElement.insertBefore(existing, chipsEl.nextSibling);
+        }
+      }
+      existing.textContent = plain;
+    }
+
+    // Inject news badge
+    var existingNews = document.getElementById('p22HeroNews');
+    if (!existingNews) {
+      existingNews = document.createElement('div');
+      existingNews.id = 'p22HeroNews';
+      existingNews.style.marginTop = '6px';
+      var p21Badge = document.getElementById('p21HeroBadge');
+      if (p21Badge) p21Badge.parentElement.insertBefore(existingNews, p21Badge.nextSibling);
+      else if (existing && existing.parentElement) existing.parentElement.insertBefore(existingNews, existing.nextSibling);
+    }
+    existingNews.innerHTML = p22NewsBadgeHTML(sym3);
+  }
+}
+
+async function p22FetchNewsForTopSignals() {
+  // Fetch news for top 10 signals (async, non-blocking)
+  var toCheck = PK.slice(0, 10).map(function(p) { return p.sym; });
+  for (var i = 0; i < toCheck.length; i++) {
+    var sym = toCheck[i];
+    var cached = P22_NEWS_CACHE[sym];
+    if (cached && (Date.now() - cached.ts) < 3 * 3600 * 1000) continue;
+    await p22CheckNews(sym);
+    // Update hero badge if this is the top signal
+    if (i === 0) {
+      var heroNews = document.getElementById('p22HeroNews');
+      if (heroNews) heroNews.innerHTML = p22NewsBadgeHTML(sym);
+    }
+  }
+  p22Save();
+}
+
+// ── Inject WTD button into detail panel ──────────────────
+var _p22OrigOpenDetail = typeof openDetail === 'function' ? openDetail : null;
+if (typeof openDetail === 'function') {
+  openDetail = function(sym) {
+    _p22OrigOpenDetail(sym);
+    setTimeout(function() {
+      // Add WTD button to detail panel
+      if (!document.getElementById('p22DpWtd')) {
+        var dpBtns = document.querySelector('#page-detail .dp-btns, #detailPanel .dp-btns');
+        if (dpBtns) {
+          var btn = document.createElement('button');
+          btn.id = 'p22DpWtd';
+          btn.className = 'p22-wtd-btn';
+          btn.style.width = '100%';
+          btn.style.justifyContent = 'center';
+          btn.innerHTML = '🤔 What Should I Do?';
+          btn.onclick = function() { p22OpenAction(sym); };
+          dpBtns.appendChild(btn);
+        }
+      } else {
+        document.getElementById('p22DpWtd').onclick = function() { p22OpenAction(sym); };
+      }
+      // Add news badge to detail panel
+      var dpConf = document.getElementById('dpConf');
+      if (dpConf && !document.getElementById('p22DpNews')) {
+        var newsEl = document.createElement('div');
+        newsEl.id = 'p22DpNews';
+        newsEl.style.marginTop = '8px';
+        newsEl.innerHTML = p22NewsBadgeHTML(sym);
+        dpConf.parentElement.insertBefore(newsEl, dpConf.nextSibling);
+        // Fetch if not cached
+        p22CheckNews(sym).then(function() {
+          newsEl.innerHTML = p22NewsBadgeHTML(sym);
+        });
+      }
+      // Add plain english explanation
+      var dpReason = document.getElementById('dpReason');
+      if (dpReason && !document.getElementById('p22DpPlain')) {
+        var plainEl = document.createElement('div');
+        plainEl.id = 'p22DpPlain';
+        plainEl.className = 'p22-explain-chip';
+        plainEl.style.margin = '10px 0';
+        var sig = SG[sym]; var dat = SD[sym];
+        plainEl.textContent = p22PlainEnglish(sym, sig, dat);
+        dpReason.parentElement.insertBefore(plainEl, dpReason.nextSibling);
+      }
+    }, 350);
+  };
+}
+
+// ── Inject Beginner Mode toggle into Settings page ───────
+var _p22OrigPg = pg;
+pg = function(name, el) {
+  _p22OrigPg(name, el);
+  if (name === 'settings') {
+    setTimeout(p22InjectSettingsToggle, 200);
+  }
+};
+
+function p22InjectSettingsToggle() {
+  if (document.getElementById('p22SettingsBlock')) return;
+  var scards = document.querySelectorAll('.scard');
+  if (!scards.length) return;
+  var lastCard = scards[scards.length - 1];
+
+  var block = document.createElement('div');
+  block.id = 'p22SettingsBlock';
+  block.className = 'scard';
+  block.style.marginTop = '14px';
+  block.innerHTML = '<div class="sc-h"><div class="sc-t">🎓 Display Preferences</div></div>'
+    + '<div class="p22-toggle-row">'
+    + '<div><div class="p22-toggle-label">Beginner Mode</div>'
+    + '<div class="p22-toggle-desc">Hides technical terms. Shows simple actions and plain English explanations.</div></div>'
+    + '<button class="p22-toggle ' + (P22_BEGINNER_MODE ? 'on' : '') + '" id="p22BeginnerToggle" onclick="p22ToggleBeginner()"></button>'
+    + '</div>';
+
+  lastCard.parentElement.insertBefore(block, lastCard.nextSibling);
+}
+
+function p22ToggleBeginner() {
+  P22_BEGINNER_MODE = !P22_BEGINNER_MODE;
+  p22Save();
+  p22ApplyBeginnerMode();
+  toast('Beginner Mode ' + (P22_BEGINNER_MODE ? 'on' : 'off'), 'ok');
+}
+
+// ── Init ─────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    p22Load();
+    p22ApplyBeginnerMode();
+
+    // Show beginner prompt on first launch (after app loads, not on setup screen)
+    var appEl = document.getElementById('app');
+    if (appEl && appEl.style.display !== 'none' && !p22HasBeenPrompted()) {
+      setTimeout(p22ShowBeginnerPrompt, 1500);
+    }
+  }, 800);
+});
+
+// Hook into launch() to show beginner prompt after first setup
+var _p22OrigLaunch = typeof launch === 'function' ? launch : null;
+if (typeof launch === 'function') {
+  launch = function(n, gk) {
+    _p22OrigLaunch(n, gk);
+    if (!p22HasBeenPrompted()) {
+      setTimeout(function() {
+        var nameEl = document.getElementById('p22BpName');
+        if (nameEl) nameEl.textContent = n || 'friend';
+        p22ShowBeginnerPrompt();
+      }, 1200);
+    }
+  };
+}
+
+// ── Expose globals ────────────────────────────────────────
+window.p22OpenAction      = p22OpenAction;
+window.p22CloseAction     = p22CloseAction;
+window.p22SetBeginnerMode = p22SetBeginnerMode;
+window.p22ToggleBeginner  = p22ToggleBeginner;
+window.p22ShowNewsDetail  = p22ShowNewsDetail;
+</script>
+<!-- ══ END PHASE 22 ══ -->
+
 </body>
 </html>
