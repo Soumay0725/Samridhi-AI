@@ -2537,7 +2537,7 @@ async function chkSrv(){try{var r=await fetch(SRV+'/health',{signal:AbortSignal.
 async function fetchBatch(){
   try {
     var symsStr = ST.join(',');
-    var r = await fetch(SRV+'/batch?syms='+encodeURIComponent(symsStr), {signal:AbortSignal.timeout(45000)});
+    var r = await fetch(SRV+'/batch?syms='+encodeURIComponent(symsStr), {signal:AbortSignal.timeout(60000)});
     var d = await r.json();
     return (d && d.results) ? d.results : null;
   } catch(e) { return null; }
