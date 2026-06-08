@@ -29,7 +29,25 @@ const HEADERS = {
 };
 
 function toYahoo(sym) {
-  const MAP = { 'M&M': 'M%26M.NS', 'L&TFH': 'L%26TFH.NS', 'BAJAJ-AUTO': 'BAJAJ-AUTO.NS' };
+  const MAP = {
+    'M&M':          'M%26M.NS',
+    'L&TFH':        'L%26TFH.NS',
+    'BAJAJ-AUTO':   'BAJAJ-AUTO.NS',
+    'IPCA':         'IPCALAB.NS',
+    'LTIM':         'LTIM.NS',
+    'LTTS':         'LTTS.NS',
+    'ICICIGI':      'ICICIGI.NS',
+    'HDFCAMC':      'HDFCAMC.NS',
+    'MUTHOOTFIN':   'MUTHOOTFIN.NS',
+    'CHOLAFIN':     'CHOLAFIN.NS',
+    'MANAPPURAM':   'MANAPPURAM.NS',
+    'PIRAMALENT':   'PIRAMALENT.NS',
+    'IPCALAB':      'IPCA.NS',
+    'NAZARA':       'NAZARA.NS',
+    'MAPMYINDIA':   'MAPMYINDIA.NS',
+    'LALPATHLAB':   'LALPATHLAB.NS',
+    'YATHARTH':     'YATHARTH.NS',
+  };
   return MAP[sym] || (sym + '.NS');
 }
 
