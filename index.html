@@ -2639,6 +2639,27 @@ async function fetchYahoo(sym){
     var price=meta.regularMarketPrice||meta.previousClose;
     if(!price||price<=0)return null;
     var prev=meta.previousClose||price;
+
+    // ── LIVE PRICE FIX: fetch today's intraday price (1d/1m) ──
+    // The daily chart API gives yesterday's close — we need today's actual price
+    try {
+      var liveUrl = 'https://shiny-rain-3867.groww-saumya.workers.dev/?symbol='+ySym+'&range=1d&interval=1m';
+      var lr = await fetch(liveUrl, { signal: AbortSignal.timeout(8000) });
+      var ld = await lr.json();
+      var liveRes = ld&&ld.chart&&ld.chart.result&&ld.chart.result[0];
+      if (liveRes) {
+        var liveMeta = liveRes.meta || {};
+        var liveQuotes = liveRes.indicators&&liveRes.indicators.quote&&liveRes.indicators.quote[0];
+        var liveCloses = liveQuotes&&liveQuotes.close ? liveQuotes.close.filter(function(v){ return v!=null&&v>0; }) : [];
+        // Use most recent 1-minute close — most accurate live price
+        var livePrice = liveCloses.length > 0 ? liveCloses[liveCloses.length-1] : (liveMeta.regularMarketPrice||0);
+        if (livePrice && livePrice > 0) {
+          prev  = liveMeta.previousClose || liveMeta.chartPreviousClose || prev;
+          price = parseFloat(livePrice.toFixed(2));
+        }
+      }
+    } catch(e) { /* keep daily price as fallback */ }
+
     var chg=parseFloat((((price-prev)/prev)*100).toFixed(2));
     var high=meta.regularMarketDayHigh||price*1.01;
     var low=meta.regularMarketDayLow||price*0.99;
