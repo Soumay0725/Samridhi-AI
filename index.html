@@ -2232,7 +2232,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 </div>
 
 <script>
-var SRV='https://samridhi-ai-new-backend-server.onrender.com'; // Phase 23A — updated to new server
+var SRV='https://samridhi-ai.onrender.com';
 
 // ══ PHASE 17B: 200 NSE STOCKS ══
 var ST=['RELIANCE','TCS','HDFCBANK','INFY','BHARTIARTL','WIPRO','TATAMOTORS','SBIN','ICICIBANK','BAJFINANCE',
@@ -2533,15 +2533,8 @@ function spark(closes,signal,w,h){
   return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" style="display:block;margin:5px 0;"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+stroke+'" stop-opacity="0.15"/><stop offset="100%" stop-color="'+stroke+'" stop-opacity="0"/></linearGradient></defs><path d="M'+pts.split(' ').join('L')+'L'+(w-2)+','+h+'L0,'+h+'Z" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/></svg>';
 }
 
-async function chkSrv(){try{var r=await fetch(SRV+'/health',{signal:AbortSignal.timeout(8000)});var d=await r.json();return d.status==='ok';}catch(e){return false;}}
-async function fetchBatch(){
-  try {
-    var symsStr = ST.join(',');
-    var r = await fetch(SRV+'/batch?syms='+encodeURIComponent(symsStr), {signal:AbortSignal.timeout(60000)});
-    var d = await r.json();
-    return (d && d.results) ? d.results : null;
-  } catch(e) { return null; }
-}
+async function chkSrv(){try{var r=await fetch(SRV+'/',{signal:AbortSignal.timeout(12000)});var d=await r.json();return d.status==='ok';}catch(e){return false;}}
+async function fetchBatch(){try{var r=await fetch(SRV+'/api/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbols:ST}),signal:AbortSignal.timeout(35000)});var d=await r.json();return(d.status==='ok'&&d.data)?d.data:null;}catch(e){return null;}}
 async function fetchIdx(){try{var r=await fetch(SRV+'/api/indices',{signal:AbortSignal.timeout(10000)});var d=await r.json();if(d.status==='ok'){if(d.nifty){document.getElementById('nV').textContent=d.nifty.price.toLocaleString('en-IN');var e=document.getElementById('nC');e.textContent=(d.nifty.chg>=0?' +':' ')+Math.abs(d.nifty.chg).toFixed(2)+'%';e.style.color=d.nifty.chg>=0?'var(--emerald)':'var(--sell)';}if(d.sensex){document.getElementById('sV').textContent=d.sensex.price.toLocaleString('en-IN');var e2=document.getElementById('sC');e2.textContent=(d.sensex.chg>=0?' +':' ')+Math.abs(d.sensex.chg).toFixed(2)+'%';e2.style.color=d.sensex.chg>=0?'var(--emerald)':'var(--sell)';}}}catch(e){}}
 
 // == YAHOO FINANCE REAL PRICE FETCHER (1 year history) ==
@@ -2930,36 +2923,16 @@ function calcScore(dat) {
 
 async function getSig(sym, dat) {
   var scored = calcScore(dat);
-  // Use fallback reason during scan — Groq reasons generated async after render
-  var reason = fallbackReason(scored.signal, dat);
-  return { signal: scored.signal, confidence: scored.confidence, entry: scored.entry, target: scored.target, stopLoss: scored.stopLoss, horizon: scored.horizon, reason: reason, rr: scored.rr, scoreBreakdown: scored.scores };
-}
-
-// Generate Groq reasons async after scan completes — non-blocking
-async function p23GenerateReasons() {
-  if (!GK || GK.length < 10) return;
-  var signals = PK.slice(0, 15); // Only top 15 signals get Groq reasons
-  for (var i = 0; i < signals.length; i++) {
-    var sym = signals[i].sym;
-    var sig = SG[sym];
-    var dat = SD[sym];
-    if (!sig || !dat || sig.reason && sig.reason.length > 60) continue;
+  var reason = '';
+  if (GK && GK.length > 10) {
     try {
-      var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + sig.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + sig.confidence + '%. Plain text only, max 30 words.';
-      var reason = await groq(ep);
-      reason = reason.replace(/[^ -~]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
-      if (reason) {
-        sig.reason = reason;
-        SG[sym].reason = reason;
-        // Update hero card reason if this is top signal
-        if (i === 0) {
-          var hReason = document.getElementById('hReason');
-          if (hReason) hReason.textContent = reason;
-        }
-      }
-    } catch(e) {}
-    await sl(200); // Small delay between Groq calls
+      var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + scored.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + scored.confidence + '%. Plain text only, max 30 words.';
+      reason = await groq(ep);
+      reason = reason.replace(/[^\x20-\x7E]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
+    } catch(e) { reason = ''; }
   }
+  if (!reason) reason = fallbackReason(scored.signal, dat);
+  return { signal: scored.signal, confidence: scored.confidence, entry: scored.entry, target: scored.target, stopLoss: scored.stopLoss, horizon: scored.horizon, reason: reason, rr: scored.rr, scoreBreakdown: scored.scores };
 }
 
 function fb(sym, dat) {
@@ -3017,102 +2990,70 @@ async function runScan(){
   setP(3,'Connecting to server...','');
   var online = await chkSrv();
   if(online){
-    // Angel One is "online" but we always use Samridhi Server for full 200-stock batch
-    // Angel One only has partial data — use Samridhi Server to fill all gaps fast
-    setP(8,'Connecting to Samridhi Server...','⚡ Fast Mode');
-    var serverOk = await p23CheckServer();
-
-    if(serverOk){
-      var batchResults = await p23BatchFetch(ST, function(pct, msg){
-        setP(pct, msg, '⚡ Samridhi Server');
+    toast('Server online — using Angel One data','ok');
+    await fetchIdx();
+    setP(15,'Fetching live prices...','Angel One SmartAPI');
+    var bd = await fetchBatch();
+    if(bd){
+      ST.forEach(function(sym){
+        var raw=bd[sym]||null;
+        if(raw&&raw.isLive){SD[sym]=enrich(raw);var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';}
+        else{SD[sym]=null;}
       });
-      if(batchResults){
-        var yahooCount = 0;
-        ST.forEach(function(sym){
-          if(batchResults[sym]){
-            SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
-            var ch = document.getElementById('c_'+sym);
-            if(ch) ch.className='lchip done';
-            yahooCount++;
-          } else {
-            SD[sym] = null;
-            var ch = document.getElementById('c_'+sym);
-            if(ch) ch.className='lchip fail';
-          }
-        });
-        setP(82,'Prices ready','⚡ Samridhi Server ('+yahooCount+'/'+ST.length+' stocks)');
-        toast('⚡ Fast Mode: '+yahooCount+' stocks fetched in parallel','ok');
-        online = true; // mark done
+      var missing=ST.filter(function(s){return!SD[s];});
+      if(missing.length===0){
+        setP(42,'Live prices ready','Angel One');
       } else {
-        online = false; // server batch failed, fall to Yahoo
-      }
-    } else {
-      online = false; // server offline, fall to Yahoo
-    }
-  }
-
-  if(!online){
-    // STEP 2b: Try Samridhi Server batch first, then fall back to sequential Yahoo
-    setP(8,'Connecting to Samridhi Server...','⚡ Fast Mode');
-    var serverOk = await p23CheckServer();
-
-    if(serverOk){
-      // ── FAST PATH: batch fetch all stocks in parallel ──
-      var batchResults = await p23BatchFetch(ST, function(pct, msg){
-        setP(pct, msg, '⚡ Samridhi Server');
-      });
-
-      if(batchResults){
-        var yahooCount = 0;
-        ST.forEach(function(sym){
-          if(batchResults[sym]){
-            SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
-            var ch = document.getElementById('c_'+sym);
-            if(ch) ch.className='lchip done';
-            yahooCount++;
-          } else {
-            SD[sym] = null;
-            var ch = document.getElementById('c_'+sym);
-            if(ch) ch.className='lchip fail';
-          }
-        });
-        setP(82,'Prices ready','⚡ Samridhi Server ('+yahooCount+'/'+ST.length+' stocks)');
-        toast('⚡ Fast Mode: '+yahooCount+' stocks fetched in parallel','ok');
-        // Skip to signal generation
-        goto_signals = true;
-      }
-    }
-
-    if(!serverOk || !goto_signals){
-      // ── SLOW PATH: sequential Yahoo Finance fallback ──
-      setP(8,'Fetching prices from Yahoo Finance...','NSE Data');
-      await fetchYahooIndices();
-      var yahooCount=0;
-      for(var yi=0;yi<ST.length;yi++){
-        var sym=ST[yi];
-        var pct=Math.round(8+(yi/ST.length)*34);
-        setP(pct,'Fetching '+sym+'...','Yahoo Finance');
-        var yData=await fetchYahoo(sym);
-        if(yData){
+        setP(20,'Filling '+missing.length+' gaps from Yahoo Finance...','');
+        for(var mi=0;mi<missing.length;mi++){
+          var sym=missing[mi];
+          var yData=await fetchYahoo(sym);
+          if(yData){
           SD[sym]=enrich(yData);
           var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
-          yahooCount++;
         } else {
           SD[sym]=null;
           var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
         }
-        await sl(50);
+          setP(20+Math.round((mi/missing.length)*22),'Fetching '+sym+'...','Yahoo Finance');
+          await sl(50);
+        }
+        setP(42,'Prices ready','Angel One + Yahoo Finance');
       }
-      if(yahooCount>0){
-        setP(42,'Prices ready','Yahoo Finance ('+yahooCount+'/'+ST.length+' stocks)');
-        toast('Yahoo Finance: '+yahooCount+'/'+ST.length+' real prices loaded','ok');
-      } else {
-        setP(42,'No prices available — scan cannot proceed','');
-        toast('No real prices available. Check your internet connection and try again.','err');
-      }
+    } else {
+      // Angel One batch failed — fall through to Yahoo
+      online = false;
     }
   }
-  var goto_signals = false; // reset flag
+
+  if(!online){
+    // STEP 2b: Yahoo Finance — sequential, one at a time
+    setP(8,'Fetching prices from Yahoo Finance...','NSE Data');
+    await fetchYahooIndices();
+    var yahooCount=0;
+    for(var yi=0;yi<ST.length;yi++){
+      var sym=ST[yi];
+      var pct=Math.round(8+(yi/ST.length)*34);
+      setP(pct,'Fetching '+sym+'...','Yahoo Finance');
+      var yData=await fetchYahoo(sym);
+      if(yData){
+        SD[sym]=enrich(yData);
+        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
+        yahooCount++;
+      } else {
+        SD[sym]=null; // No real data — exclude from signals entirely
+        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
+      }
+      await sl(50);
+    }
+    if(yahooCount>0){
+      setP(42,'Prices ready','Yahoo Finance ('+yahooCount+'/'+ST.length+' stocks)');
+      toast('Yahoo Finance: '+yahooCount+'/'+ST.length+' real prices loaded','ok');
+    } else {
+      setP(42,'No prices available — scan cannot proceed','');
+      toast('No real prices available. Check your internet connection and try again.','err');
+    }
+  }
 
   setP(44,'Reading market mood...','');
   var mood=await getMood();
@@ -11078,512 +11019,6 @@ window.p22ToggleBeginner  = p22ToggleBeginner;
 window.p22ShowNewsDetail  = p22ShowNewsDetail;
 </script>
 <!-- ══ END PHASE 22 ══ -->
-
-
-// ── p23ComputeIndicators: compute RSI/MACD/SMA/ATR/Bollinger from raw server data ──
-function p23ComputeIndicators(d) {
-  if (!d || !d.price) return d;
-  var closes  = d.closes  || [];
-  var highs   = d.highs   || [];
-  var lows    = d.lows    || [];
-  var volumes = d.volumes || [];
-
-  // RSI (Wilder 14-period)
-  var rsi = 50;
-  if (closes.length >= 15) {
-    var gains = 0, losses = 0;
-    for (var i = 1; i <= 14; i++) {
-      var diff = closes[i] - closes[i-1];
-      if (diff >= 0) gains += diff; else losses -= diff;
-    }
-    var avgG = gains / 14, avgL = losses / 14;
-    for (var i = 15; i < closes.length; i++) {
-      var diff = closes[i] - closes[i-1];
-      if (diff >= 0) { avgG = (avgG*13 + diff)/14; avgL = (avgL*13)/14; }
-      else           { avgG = (avgG*13)/14; avgL = (avgL*13 - diff)/14; }
-    }
-    rsi = avgL === 0 ? 100 : parseFloat((100-(100/(1+(avgG/avgL)))).toFixed(1));
-  }
-
-  // SMAs
-  var sma20=0, sma50=0, sma200=0;
-  if (closes.length >= 20)  sma20  = parseFloat((closes.slice(-20).reduce(function(a,b){return a+b;},0)/20).toFixed(2));
-  if (closes.length >= 50)  sma50  = parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
-  if (closes.length >= 200) sma200 = parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
-
-  // MACD
-  var macdBull = false;
-  if (closes.length >= 26) {
-    var calcEMALocal = function(arr, period) {
-      var k = 2/(period+1), ema = arr[0];
-      for (var i = 1; i < arr.length; i++) ema = arr[i]*k + ema*(1-k);
-      return ema;
-    };
-    var ema12 = calcEMALocal(closes, 12);
-    var ema26 = calcEMALocal(closes, 26);
-    var macdLine = ema12 - ema26;
-    var macdVals = [];
-    for (var i = 26; i <= closes.length; i++) {
-      var sl = closes.slice(0, i);
-      macdVals.push(calcEMALocal(sl, 12) - calcEMALocal(sl, 26));
-    }
-    var signalLine = macdVals.length >= 9 ? calcEMALocal(macdVals, 9) : (macdVals[macdVals.length-1]||0);
-    macdBull = macdLine > signalLine;
-  } else {
-    macdBull = sma20 > sma50;
-  }
-
-  // Volume ratio
-  var volR = 0.9;
-  var todayVol = d.volume || 0;
-  if (volumes.length >= 20 && todayVol > 0) {
-    var avgVol20 = volumes.slice(-20).reduce(function(a,b){return a+b;},0) / 20;
-    volR = avgVol20 > 0 ? parseFloat((todayVol/avgVol20).toFixed(2)) : 0.9;
-  }
-  volR = Math.max(0.1, Math.min(5, volR));
-
-  // ATR (14-period)
-  var atr = d.price * 0.012;
-  if (highs.length >= 14 && lows.length >= 14 && closes.length >= 15) {
-    var trSum = 0;
-    for (var i = 1; i < highs.length && i < lows.length && i < closes.length; i++) {
-      var prev = closes[i-1];
-      var tr = Math.max(highs[i]-lows[i], Math.abs(highs[i]-prev), Math.abs(lows[i]-prev));
-      trSum += tr;
-    }
-    atr = parseFloat((trSum / Math.min(14, highs.length-1)).toFixed(2));
-  }
-
-  // Bollinger Band position
-  var bbPos = 0.5;
-  if (closes.length >= 20 && sma20 > 0) {
-    var variance = closes.slice(-20).reduce(function(s,v){return s+Math.pow(v-sma20,2);},0)/20;
-    var stdDev = Math.sqrt(variance);
-    var upper = sma20 + 2*stdDev, lower = sma20 - 2*stdDev;
-    bbPos = upper > lower ? (d.price - lower)/(upper - lower) : 0.5;
-  }
-
-  // Price change %
-  var chg = d.chg || 0;
-
-  return {
-    sym:    d.sym,
-    price:  d.price,
-    chg:    chg,
-    rsi:    rsi,
-    macd:   { bull: macdBull, line: 0 },
-    sma20:  sma20  || d.price,
-    sma50:  sma50  || d.price,
-    sma200: sma200 || d.price,
-    volR:   volR,
-    atr:    atr,
-    bbPos:  bbPos,
-    closes: closes,
-    highs:  highs,
-    lows:   lows,
-    volumes:volumes,
-    volume: d.volume || 0,
-    w52Hi:  d.w52Hi  || null,
-    w52Lo:  d.w52Lo  || null,
-    pe:     d.pe     || null,
-    isLive:   true,
-    isServer: true
-  };
-}
-
-<!-- ══════════════════════════════════════════════════════════
-     PHASE 23A — BACKEND SERVER INTEGRATION
-     - Routes all stock fetches through Render server
-     - Parallel batch fetch (200 stocks in ~15s vs 4 mins)
-     - Live price refresh every 30s
-     - Falls back to direct Yahoo if server unavailable
-     ══════════════════════════════════════════════════════════ -->
-<script>
-// ════════════════════════════════════════════════════════
-//  PHASE 23A — SERVER INTEGRATION
-// ════════════════════════════════════════════════════════
-
-// ── Server URL — update this after Render deploys ───────
-var SAMRIDHI_SERVER = localStorage.getItem('p23_server_url') || SRV; // Always use same server as SRV
-var P23_SERVER_OK   = null;   // null=unknown, true=online, false=offline
-
-// ── Check server health on load ─────────────────────────
-async function p23CheckServer() {
-  try {
-    var r = await fetch(SAMRIDHI_SERVER + '/health', {
-      signal: AbortSignal.timeout(6000)
-    });
-    if (r.ok) {
-      P23_SERVER_OK = true;
-      console.log('[Phase 23A] Server online:', SAMRIDHI_SERVER);
-      p23UpdateServerBadge(true);
-      return true;
-    }
-  } catch(e) {}
-  P23_SERVER_OK = false;
-  console.warn('[Phase 23A] Server offline — using direct Yahoo fallback');
-  p23UpdateServerBadge(false);
-  return false;
-}
-
-function p23UpdateServerBadge(online) {
-  var badge = document.getElementById('p23ServerBadge');
-  if (!badge) return;
-  badge.textContent = online ? '⚡ Fast Mode' : '🌐 Standard Mode';
-  badge.style.color = online ? 'var(--emerald)' : 'var(--muted)';
-  badge.title = online
-    ? 'Samridhi Server online — parallel fetch active'
-    : 'Server offline — using direct Yahoo Finance (slower)';
-}
-
-// ── Override fetchYahoo to route through server ──────────
-// Wraps the existing fetchYahoo — if server is online, use /stock/:sym
-// If server is offline, fall through to original fetchYahoo
-var _p23OrigFetchYahoo = fetchYahoo;
-
-fetchYahoo = async function(sym) {
-  // If server status unknown, check it first
-  if (P23_SERVER_OK === null) await p23CheckServer();
-
-  if (P23_SERVER_OK) {
-    try {
-      var r = await fetch(SAMRIDHI_SERVER + '/stock/' + encodeURIComponent(sym), {
-        signal: AbortSignal.timeout(12000)
-      });
-      if (r.ok) {
-        var d = await r.json();
-        if (d && d.price) {
-          // Server returns data in same shape as Yahoo — enrich() will handle it
-          d.isLive   = true;
-          d.isServer = true;
-          return d;
-        }
-      }
-    } catch(e) {
-      console.warn('[Phase 23A] Server fetch failed for ' + sym + ' — falling back');
-      P23_SERVER_OK = false;
-      p23UpdateServerBadge(false);
-    }
-  }
-  // Fallback to original Yahoo direct
-  return _p23OrigFetchYahoo(sym);
-};
-
-// ── Batch fetch — replaces sequential scan loop ──────────
-// Called by the scan function to fetch ALL stocks at once
-async function p23BatchFetch(symbols, onProgress) {
-  if (!P23_SERVER_OK) {
-    // Can't batch without server
-    return null;
-  }
-
-  try {
-    var chunkSize = 50;   // send 50 at a time to avoid URL length limits
-    var results   = {};
-    var chunks    = [];
-    for (var i = 0; i < symbols.length; i += chunkSize) {
-      chunks.push(symbols.slice(i, i + chunkSize));
-    }
-
-    for (var ci = 0; ci < chunks.length; ci++) {
-      var chunk    = chunks[ci];
-      var symsStr  = chunk.join(',');
-      var pct      = Math.round(10 + (ci / chunks.length) * 70);
-      if (onProgress) onProgress(pct, 'Fetching batch ' + (ci+1) + '/' + chunks.length + '...');
-
-      var r = await fetch(SAMRIDHI_SERVER + '/batch?syms=' + encodeURIComponent(symsStr), {
-        signal: AbortSignal.timeout(45000)
-      });
-      if (!r.ok) throw new Error('Batch fetch failed: ' + r.status);
-      var d = await r.json();
-
-      if (d.results) {
-        Object.entries(d.results).forEach(function(kv) {
-          var s    = kv[0];
-          var data = kv[1];
-          if (data) {
-            data.isLive   = true;
-            data.isServer = true;
-            results[s]    = data;
-          }
-        });
-      }
-    }
-
-    return results;
-  } catch(e) {
-    console.error('[Phase 23A] Batch fetch error:', e.message);
-    P23_SERVER_OK = false;
-    p23UpdateServerBadge(false);
-    return null;
-  }
-}
-
-// ── Hook into the main scan — replace sequential with batch ──
-var _p23OrigDoScan = typeof doScan === 'function' ? doScan : null;
-
-// We hook into the scan loop's price-fetching phase
-// The existing scan does: for each sym → await fetchYahoo(sym)
-// We intercept at rAll level — pre-populate SD[] via batch before scan runs
-var _p23OrigRAll = rAll;
-rAll = function(mood) {
-  _p23OrigRAll(mood);
-  // After render, update server badge and generate Groq reasons async
-  setTimeout(function() {
-    p23UpdateServerBadge(P23_SERVER_OK);
-    p23GenerateReasons(); // Non-blocking — fills in reasons after scan completes
-  }, 800);
-};
-
-// Hook into the scan function's progress phase to use batch
-// We patch the scan by overriding the pre-fetch step
-var _p23ScanPatched = false;
-
-function p23PatchScanIfNeeded() {
-  if (_p23ScanPatched) return;
-  _p23ScanPatched = true;
-
-  // Override fP (fetch prices) which is the main price-fetching function
-  if (typeof fP === 'function') {
-    var _origFP = fP;
-    fP = async function(force, btn) {
-      if (P23_SERVER_OK && ST && ST.length) {
-        setP(8, 'Connecting to Samridhi Server...', '⚡ Fast Mode');
-        var batchResults = await p23BatchFetch(ST, function(pct, msg) {
-          setP(pct, msg, 'Samridhi Server');
-        });
-
-        if (batchResults) {
-          // Pre-populate SD with batch results
-          var fetched = 0;
-          ST.forEach(function(sym) {
-            if (batchResults[sym]) {
-              SD[sym] = enrich(p23ComputeIndicators(batchResults[sym]));
-              fetched++;
-              var ch = document.getElementById('c_' + sym);
-              if (ch) ch.className = 'lchip done';
-            }
-          });
-          setP(82, 'Prices ready', 'Samridhi Server (' + fetched + '/' + ST.length + ' stocks)');
-          toast('⚡ Fast Mode: ' + fetched + ' stocks in ~15s via Samridhi Server', 'ok');
-
-          // Skip the slow sequential Yahoo loop — jump straight to signal gen
-          await p23RunSignalGen(force, btn);
-          return;
-        }
-        // If batch failed, fall through to normal sequential fetch
-      }
-      // Normal path
-      return _origFP(force, btn);
-    };
-  }
-}
-
-async function p23RunSignalGen(force, btn) {
-  // Re-run signal generation directly after batch pre-population
-  setP(83, 'Reading market mood...', '');
-  var mood = await getMood();
-
-  setP(86, 'Generating signals...', '');
-  SG = {}; PK = [];
-  for (var j = 0; j < ST.length; j++) {
-    var s = ST[j];
-    if (!SD[s]) continue;
-    var sig = await getSig(s, SD[s]);
-    SG[s] = sig;
-    if (sig.signal !== 'HOLD') PK.push({ sym: s, signal: sig, data: SD[s] });
-  }
-
-  PK = applyStratMode(PK);
-  PK.sort(function(a, b) { return b.signal.confidence - a.signal.confidence; });
-
-  setP(100, 'Scan complete!', PK.length + ' signals found');
-  await sl(500);
-  document.getElementById('loading').style.display = 'none';
-  rAll(mood);
-
-  var now = new Date();
-  var ts  = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
-  var lastScEl = document.getElementById('lastSc');
-  if (lastScEl) lastScEl.textContent = ts;
-
-  var liveCount = Object.values(SD).filter(function(d) { return d && (d.isServer || d.isLive); }).length;
-  var freshEl   = document.getElementById('freshT');
-  if (freshEl)  freshEl.textContent = liveCount + ' live';
-
-  if (btn) { btn.disabled = false; btn.textContent = 'Scan Markets'; }
-}
-
-// ── Live price refresh every 30s ────────────────────────
-var P23_LIVE_INTERVAL = null;
-
-function p23StartLiveRefresh() {
-  if (P23_LIVE_INTERVAL) return;
-  if (!P23_SERVER_OK)    return;
-
-  P23_LIVE_INTERVAL = setInterval(async function() {
-    // Only refresh if app is visible and scan has run
-    if (!PK || !PK.length) return;
-    if (document.hidden) return;
-
-    // Refresh prices for top 20 signals silently
-    var toRefresh = PK.slice(0, 20).map(function(p) { return p.sym; });
-    try {
-      var r = await fetch(SAMRIDHI_SERVER + '/batch?syms=' + toRefresh.join(','), {
-        signal: AbortSignal.timeout(15000)
-      });
-      if (!r.ok) return;
-      var d = await r.json();
-      if (!d.results) return;
-
-      Object.entries(d.results).forEach(function(kv) {
-        var sym  = kv[0];
-        var data = kv[1];
-        if (!data || !SD[sym]) return;
-        // Update live price fields only
-        SD[sym].price    = data.price;
-        SD[sym].chg      = data.chg;
-        SD[sym].volume   = data.volume;
-        SD[sym].isServer = true;
-      });
-
-      // Refresh hero card price display if visible
-      p23RefreshHeroPrice();
-    } catch(e) {}
-  }, 30000);   // every 30 seconds
-}
-
-function p23RefreshHeroPrice() {
-  if (!PK || !PK.length) return;
-  var sym = PK[0].sym;
-  var d   = SD[sym];
-  if (!d) return;
-
-  // Update price display elements if they exist
-  var priceEl = document.getElementById('hPrice') || document.getElementById('dpPrice');
-  if (priceEl) {
-    priceEl.textContent = '₹' + d.price.toFixed(2);
-  }
-  var chgEl = document.getElementById('hChg') || document.getElementById('dpChg');
-  if (chgEl) {
-    chgEl.textContent = (d.chg >= 0 ? '+' : '') + d.chg.toFixed(2) + '%';
-    chgEl.className   = d.chg >= 0 ? 'up' : 'dn';
-  }
-}
-
-function p23StopLiveRefresh() {
-  if (P23_LIVE_INTERVAL) {
-    clearInterval(P23_LIVE_INTERVAL);
-    P23_LIVE_INTERVAL = null;
-  }
-}
-
-// ── Index prices via server ──────────────────────────────
-async function p23RefreshIndices() {
-  if (!P23_SERVER_OK) return;
-  try {
-    var r = await fetch(SAMRIDHI_SERVER + '/indices', { signal: AbortSignal.timeout(8000) });
-    if (!r.ok) return;
-    var d = await r.json();
-
-    var nV = document.getElementById('nV');
-    var sV = document.getElementById('sV');
-    var nC = document.getElementById('nC');
-    var sC = document.getElementById('sC');
-
-    if (nV && d.nifty?.price)  nV.textContent = d.nifty.price.toLocaleString('en-IN');
-    if (sV && d.sensex?.price) sV.textContent = d.sensex.price.toLocaleString('en-IN');
-    if (nC && d.nifty?.chg) {
-      var nc = parseFloat(d.nifty.chg);
-      nC.textContent = (nc >= 0 ? '+' : '') + nc.toFixed(2) + '%';
-      nC.style.color = nc >= 0 ? 'var(--emerald)' : 'var(--sell)';
-    }
-    if (sC && d.sensex?.chg) {
-      var sc = parseFloat(d.sensex.chg);
-      sC.textContent = (sc >= 0 ? '+' : '') + sc.toFixed(2) + '%';
-      sC.style.color = sc >= 0 ? 'var(--emerald)' : 'var(--sell)';
-    }
-  } catch(e) {}
-}
-
-// ── Settings: allow custom server URL ────────────────────
-var _p23OrigPg = pg;
-pg = function(name, el) {
-  _p23OrigPg(name, el);
-  if (name === 'settings') {
-    setTimeout(p23InjectServerSettings, 250);
-  }
-};
-
-function p23InjectServerSettings() {
-  if (document.getElementById('p23ServerBlock')) return;
-  var p22Block = document.getElementById('p22SettingsBlock');
-  if (!p22Block) return;
-
-  var block = document.createElement('div');
-  block.id = 'p23ServerBlock';
-  block.className = 'scard';
-  block.style.marginTop = '14px';
-  block.innerHTML = '<div class="sc-h"><div class="sc-t">⚡ Samridhi Server</div></div>'
-    + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Backend server for fast parallel scanning. Leave default unless you deployed your own.</div>'
-    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-    + '<span id="p23StatusDot" style="width:8px;height:8px;border-radius:50%;background:' + (P23_SERVER_OK ? 'var(--emerald)' : '#ccc') + ';flex-shrink:0;"></span>'
-    + '<span style="font-size:11px;color:var(--muted);" id="p23StatusTxt">' + (P23_SERVER_OK ? 'Online' : 'Checking...') + '</span>'
-    + '</div>'
-    + '<input class="s-inp2" id="p23ServerUrl" type="text" value="' + SAMRIDHI_SERVER + '" placeholder="https://samridhi-server.onrender.com" style="margin-bottom:8px;font-size:11px;">'
-    + '<button class="save-btn" onclick="p23SaveServerUrl()" style="font-size:12px;padding:8px 16px;">Save & Test</button>';
-
-  p22Block.parentElement.insertBefore(block, p22Block.nextSibling);
-}
-
-async function p23SaveServerUrl() {
-  var inp = document.getElementById('p23ServerUrl');
-  if (!inp) return;
-  var url = inp.value.trim().replace(/\/$/, '');
-  SAMRIDHI_SERVER = url;
-  localStorage.setItem('p23_server_url', url);
-  P23_SERVER_OK = null;
-  toast('Testing server...', 'ok');
-  var ok = await p23CheckServer();
-
-  var dot = document.getElementById('p23StatusDot');
-  var txt = document.getElementById('p23StatusTxt');
-  if (dot) dot.style.background = ok ? 'var(--emerald)' : 'var(--sell)';
-  if (txt) txt.textContent = ok ? 'Online ✓' : 'Offline ✗';
-  toast(ok ? '⚡ Server connected!' : '✗ Could not reach server', ok ? 'ok' : 'err');
-}
-
-// ── Init ─────────────────────────────────────────────────
-window.addEventListener('load', function() {
-  setTimeout(async function() {
-    // Add server badge to topbar
-    var tbR = document.querySelector('.tb-r');
-    if (tbR && !document.getElementById('p23ServerBadge')) {
-      var badge = document.createElement('span');
-      badge.id = 'p23ServerBadge';
-      badge.style.cssText = 'font-size:10px;color:var(--muted);cursor:default;padding:3px 8px;border-radius:10px;background:var(--bg,#f4f4f6);border:1px solid var(--border);';
-      badge.textContent = '🌐 Connecting...';
-      tbR.insertBefore(badge, tbR.firstChild);
-    }
-
-    // Check server
-    var ok = await p23CheckServer();
-    if (ok) {
-      p23PatchScanIfNeeded();
-      p23StartLiveRefresh();
-      // Refresh indices immediately
-      p23RefreshIndices();
-      setInterval(p23RefreshIndices, 60000);   // every 1 min
-    }
-  }, 1000);
-});
-
-// Expose globals
-window.p23CheckServer    = p23CheckServer;
-window.p23SaveServerUrl  = p23SaveServerUrl;
-window.SAMRIDHI_SERVER   = SAMRIDHI_SERVER;
-</script>
-<!-- ══ END PHASE 23A ══ -->
 
 </body>
 </html>
