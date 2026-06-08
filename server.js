@@ -16,16 +16,8 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── CORS — allow GitHub Pages frontend ──────────────────
-app.use(cors({
-  origin: [
-    'https://soumay0725.github.io',
-    'http://localhost:3000',
-    'http://127.0.0.1:5500',
-    'null'   // local file:// access
-  ],
-  methods: ['GET', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+// Allow all origins — Samridhi is a personal tool, no sensitive data
+app.use(cors());
 
 app.use(express.json());
 
