@@ -717,6 +717,42 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     .idx:last-of-type{display:none;}
   }
 }
+
+/* ── Phase 20 Milestone Modal ── */
+.p20-milestone-modal {
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.6);
+}
+.p20-milestone-modal.open { display: flex; }
+.p20-milestone-card {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 36px 28px;
+  text-align: center;
+  max-width: 340px; width: 90%;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+}
+.p20-milestone-emoji { font-size: 56px; margin-bottom: 12px; }
+.p20-milestone-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 700; color: var(--navy); margin-bottom: 6px;
+}
+.p20-milestone-cap {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px; font-weight: 700; color: var(--emerald); margin: 6px 0;
+}
+.p20-milestone-msg {
+  font-size: 13px; color: var(--muted); line-height: 1.55; margin: 12px 0 20px;
+}
+.p20-milestone-close {
+  background: var(--navy); color: #fff; border: none;
+  border-radius: 12px; padding: 12px 28px;
+  font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;
+}
+
 </style>
 </head>
 <body>
@@ -7268,10 +7304,12 @@ calcScore = function(dat, timeframeHint) {
   var state = p16GetMarketState();
   var tf = timeframeHint || 'auto';
 
-  // If market is closed, demote intraday signals
+  // If market is closed or weekend, convert Intraday → Swing
+  // Intraday signals have no meaning on closed market — show as Swing planning signals
   if ((state === 'closed' || state === 'weekend') && scored.horizon && scored.horizon.indexOf('Intraday') > -1) {
-    scored.confidence = Math.max(50, scored.confidence - 15);
-    scored._marketBlocked = true;
+    scored.horizon = 'Swing (3-7 days)';
+    scored._demotedFromIntraday = true;
+    // No confidence penalty — the signal itself is valid for swing planning
   }
 
   // Pre-market: only show gap analysis, suppress intraday signals
@@ -10178,11 +10216,9 @@ function p21CheckWeekendGap() {
     openPositions = P19_POSITIONS.filter(function(p){ return p.active; });
   }
   // Also count open OC_SIGNALS
-  var openSignals = typeof OC_SIGNALS !== 'undefined'
-    ? OC_SIGNALS.filter(function(s){ return s.status === 'OPEN'; })
-    : [];
-
-  var total = openPositions.length + openSignals.length;
+  // Only count real positions user manually opened via "I Bought This"
+  // NOT auto-saved OC_SIGNALS which are scan results, not actual trades
+  var total = openPositions.length;
   if (!total) return;
 
   // Show in-app banner
@@ -10190,7 +10226,6 @@ function p21CheckWeekendGap() {
   var txt    = document.getElementById('p21WeekendText');
   if (txt) {
     var names = openPositions.map(function(p){ return NM[p.sym]||p.sym; })
-      .concat(openSignals.slice(0,3).map(function(s){ return NM[s.sym]||s.sym; }))
       .slice(0,4).join(', ');
     txt.textContent = 'You have ' + total + ' open position' + (total===1?'':'s') + ' going into the weekend'
       + (names ? ' (' + names + (total>4?'…':') ') : '. ')
@@ -10206,9 +10241,7 @@ function p21CheckWeekendGap() {
     openPositions.forEach(function(p){
       msg += '• ' + (NM[p.sym]||p.sym) + ' — Entry ₹' + p.entry + ' | Current SL ₹' + (p.trailingSL||p.sl) + '\n';
     });
-    if (openSignals.length) {
-      msg += '\n_Plus ' + openSignals.length + ' tracked signal' + (openSignals.length===1?'':'s') + ' still open._\n';
-    }
+    // Only real positions shown in Telegram
     msg += '\nWeekend gaps are a common source of retail losses. Consider reducing exposure before market close.';
     if (typeof p19SendTelegram === 'function') p19SendTelegram(msg);
   }
