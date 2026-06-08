@@ -3027,33 +3027,67 @@ async function runScan(){
   }
 
   if(!online){
-    // STEP 2b: Yahoo Finance — sequential, one at a time
-    setP(8,'Fetching prices from Yahoo Finance...','NSE Data');
-    await fetchYahooIndices();
-    var yahooCount=0;
-    for(var yi=0;yi<ST.length;yi++){
-      var sym=ST[yi];
-      var pct=Math.round(8+(yi/ST.length)*34);
-      setP(pct,'Fetching '+sym+'...','Yahoo Finance');
-      var yData=await fetchYahoo(sym);
-      if(yData){
-        SD[sym]=enrich(yData);
-        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
-        yahooCount++;
-      } else {
-        SD[sym]=null; // No real data — exclude from signals entirely
-        var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
+    // STEP 2b: Try Samridhi Server batch first, then fall back to sequential Yahoo
+    setP(8,'Connecting to Samridhi Server...','⚡ Fast Mode');
+    var serverOk = await p23CheckServer();
+
+    if(serverOk){
+      // ── FAST PATH: batch fetch all stocks in parallel ──
+      var batchResults = await p23BatchFetch(ST, function(pct, msg){
+        setP(pct, msg, '⚡ Samridhi Server');
+      });
+
+      if(batchResults){
+        var yahooCount = 0;
+        ST.forEach(function(sym){
+          if(batchResults[sym]){
+            SD[sym] = enrich(batchResults[sym]);
+            var ch = document.getElementById('c_'+sym);
+            if(ch) ch.className='lchip done';
+            yahooCount++;
+          } else {
+            SD[sym] = null;
+            var ch = document.getElementById('c_'+sym);
+            if(ch) ch.className='lchip fail';
+          }
+        });
+        setP(82,'Prices ready','⚡ Samridhi Server ('+yahooCount+'/'+ST.length+' stocks)');
+        toast('⚡ Fast Mode: '+yahooCount+' stocks fetched in parallel','ok');
+        // Skip to signal generation
+        goto_signals = true;
       }
-      await sl(50);
     }
-    if(yahooCount>0){
-      setP(42,'Prices ready','Yahoo Finance ('+yahooCount+'/'+ST.length+' stocks)');
-      toast('Yahoo Finance: '+yahooCount+'/'+ST.length+' real prices loaded','ok');
-    } else {
-      setP(42,'No prices available — scan cannot proceed','');
-      toast('No real prices available. Check your internet connection and try again.','err');
+
+    if(!serverOk || !goto_signals){
+      // ── SLOW PATH: sequential Yahoo Finance fallback ──
+      setP(8,'Fetching prices from Yahoo Finance...','NSE Data');
+      await fetchYahooIndices();
+      var yahooCount=0;
+      for(var yi=0;yi<ST.length;yi++){
+        var sym=ST[yi];
+        var pct=Math.round(8+(yi/ST.length)*34);
+        setP(pct,'Fetching '+sym+'...','Yahoo Finance');
+        var yData=await fetchYahoo(sym);
+        if(yData){
+          SD[sym]=enrich(yData);
+          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip done';
+          yahooCount++;
+        } else {
+          SD[sym]=null;
+          var ch=document.getElementById('c_'+sym);if(ch)ch.className='lchip fail';
+        }
+        await sl(50);
+      }
+      if(yahooCount>0){
+        setP(42,'Prices ready','Yahoo Finance ('+yahooCount+'/'+ST.length+' stocks)');
+        toast('Yahoo Finance: '+yahooCount+'/'+ST.length+' real prices loaded','ok');
+      } else {
+        setP(42,'No prices available — scan cannot proceed','');
+        toast('No real prices available. Check your internet connection and try again.','err');
+      }
     }
   }
+  var goto_signals = false; // reset flag
 
   setP(44,'Reading market mood...','');
   var mood=await getMood();
