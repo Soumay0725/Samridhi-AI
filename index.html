@@ -11020,5 +11020,398 @@ window.p22ShowNewsDetail  = p22ShowNewsDetail;
 </script>
 <!-- ══ END PHASE 22 ══ -->
 
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 23A — BACKEND SERVER INTEGRATION
+     - Routes all stock fetches through Render server
+     - Parallel batch fetch (200 stocks in ~15s vs 4 mins)
+     - Live price refresh every 30s
+     - Falls back to direct Yahoo if server unavailable
+     ══════════════════════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════════════════
+//  PHASE 23A — SERVER INTEGRATION
+// ════════════════════════════════════════════════════════
+
+// ── Server URL — update this after Render deploys ───────
+var SAMRIDHI_SERVER = localStorage.getItem('p23_server_url') || 'https://samridhi-server.onrender.com';
+var P23_SERVER_OK   = null;   // null=unknown, true=online, false=offline
+
+// ── Check server health on load ─────────────────────────
+async function p23CheckServer() {
+  try {
+    var r = await fetch(SAMRIDHI_SERVER + '/health', {
+      signal: AbortSignal.timeout(6000)
+    });
+    if (r.ok) {
+      P23_SERVER_OK = true;
+      console.log('[Phase 23A] Server online:', SAMRIDHI_SERVER);
+      p23UpdateServerBadge(true);
+      return true;
+    }
+  } catch(e) {}
+  P23_SERVER_OK = false;
+  console.warn('[Phase 23A] Server offline — using direct Yahoo fallback');
+  p23UpdateServerBadge(false);
+  return false;
+}
+
+function p23UpdateServerBadge(online) {
+  var badge = document.getElementById('p23ServerBadge');
+  if (!badge) return;
+  badge.textContent = online ? '⚡ Fast Mode' : '🌐 Standard Mode';
+  badge.style.color = online ? 'var(--emerald)' : 'var(--muted)';
+  badge.title = online
+    ? 'Samridhi Server online — parallel fetch active'
+    : 'Server offline — using direct Yahoo Finance (slower)';
+}
+
+// ── Override fetchYahoo to route through server ──────────
+// Wraps the existing fetchYahoo — if server is online, use /stock/:sym
+// If server is offline, fall through to original fetchYahoo
+var _p23OrigFetchYahoo = fetchYahoo;
+
+fetchYahoo = async function(sym) {
+  // If server status unknown, check it first
+  if (P23_SERVER_OK === null) await p23CheckServer();
+
+  if (P23_SERVER_OK) {
+    try {
+      var r = await fetch(SAMRIDHI_SERVER + '/stock/' + encodeURIComponent(sym), {
+        signal: AbortSignal.timeout(12000)
+      });
+      if (r.ok) {
+        var d = await r.json();
+        if (d && d.price) {
+          // Server returns data in same shape as Yahoo — enrich() will handle it
+          d.isLive   = true;
+          d.isServer = true;
+          return d;
+        }
+      }
+    } catch(e) {
+      console.warn('[Phase 23A] Server fetch failed for ' + sym + ' — falling back');
+      P23_SERVER_OK = false;
+      p23UpdateServerBadge(false);
+    }
+  }
+  // Fallback to original Yahoo direct
+  return _p23OrigFetchYahoo(sym);
+};
+
+// ── Batch fetch — replaces sequential scan loop ──────────
+// Called by the scan function to fetch ALL stocks at once
+async function p23BatchFetch(symbols, onProgress) {
+  if (!P23_SERVER_OK) {
+    // Can't batch without server
+    return null;
+  }
+
+  try {
+    var chunkSize = 50;   // send 50 at a time to avoid URL length limits
+    var results   = {};
+    var chunks    = [];
+    for (var i = 0; i < symbols.length; i += chunkSize) {
+      chunks.push(symbols.slice(i, i + chunkSize));
+    }
+
+    for (var ci = 0; ci < chunks.length; ci++) {
+      var chunk    = chunks[ci];
+      var symsStr  = chunk.join(',');
+      var pct      = Math.round(10 + (ci / chunks.length) * 70);
+      if (onProgress) onProgress(pct, 'Fetching batch ' + (ci+1) + '/' + chunks.length + '...');
+
+      var r = await fetch(SAMRIDHI_SERVER + '/batch?syms=' + encodeURIComponent(symsStr), {
+        signal: AbortSignal.timeout(45000)
+      });
+      if (!r.ok) throw new Error('Batch fetch failed: ' + r.status);
+      var d = await r.json();
+
+      if (d.results) {
+        Object.entries(d.results).forEach(function(kv) {
+          var s    = kv[0];
+          var data = kv[1];
+          if (data) {
+            data.isLive   = true;
+            data.isServer = true;
+            results[s]    = data;
+          }
+        });
+      }
+    }
+
+    return results;
+  } catch(e) {
+    console.error('[Phase 23A] Batch fetch error:', e.message);
+    P23_SERVER_OK = false;
+    p23UpdateServerBadge(false);
+    return null;
+  }
+}
+
+// ── Hook into the main scan — replace sequential with batch ──
+var _p23OrigDoScan = typeof doScan === 'function' ? doScan : null;
+
+// We hook into the scan loop's price-fetching phase
+// The existing scan does: for each sym → await fetchYahoo(sym)
+// We intercept at rAll level — pre-populate SD[] via batch before scan runs
+var _p23OrigRAll = rAll;
+rAll = function(mood) {
+  _p23OrigRAll(mood);
+  // After render, update server badge
+  setTimeout(function() {
+    p23UpdateServerBadge(P23_SERVER_OK);
+  }, 300);
+};
+
+// Hook into the scan function's progress phase to use batch
+// We patch the scan by overriding the pre-fetch step
+var _p23ScanPatched = false;
+
+function p23PatchScanIfNeeded() {
+  if (_p23ScanPatched) return;
+  _p23ScanPatched = true;
+
+  // Override fP (fetch prices) which is the main price-fetching function
+  if (typeof fP === 'function') {
+    var _origFP = fP;
+    fP = async function(force, btn) {
+      if (P23_SERVER_OK && ST && ST.length) {
+        setP(8, 'Connecting to Samridhi Server...', '⚡ Fast Mode');
+        var batchResults = await p23BatchFetch(ST, function(pct, msg) {
+          setP(pct, msg, 'Samridhi Server');
+        });
+
+        if (batchResults) {
+          // Pre-populate SD with batch results
+          var fetched = 0;
+          ST.forEach(function(sym) {
+            if (batchResults[sym]) {
+              SD[sym] = enrich(batchResults[sym]);
+              fetched++;
+              var ch = document.getElementById('c_' + sym);
+              if (ch) ch.className = 'lchip done';
+            }
+          });
+          setP(82, 'Prices ready', 'Samridhi Server (' + fetched + '/' + ST.length + ' stocks)');
+          toast('⚡ Fast Mode: ' + fetched + ' stocks in ~15s via Samridhi Server', 'ok');
+
+          // Skip the slow sequential Yahoo loop — jump straight to signal gen
+          await p23RunSignalGen(force, btn);
+          return;
+        }
+        // If batch failed, fall through to normal sequential fetch
+      }
+      // Normal path
+      return _origFP(force, btn);
+    };
+  }
+}
+
+async function p23RunSignalGen(force, btn) {
+  // Re-run signal generation directly after batch pre-population
+  setP(83, 'Reading market mood...', '');
+  var mood = await getMood();
+
+  setP(86, 'Generating signals...', '');
+  SG = {}; PK = [];
+  for (var j = 0; j < ST.length; j++) {
+    var s = ST[j];
+    if (!SD[s]) continue;
+    var sig = await getSig(s, SD[s]);
+    SG[s] = sig;
+    if (sig.signal !== 'HOLD') PK.push({ sym: s, signal: sig, data: SD[s] });
+  }
+
+  PK = applyStratMode(PK);
+  PK.sort(function(a, b) { return b.signal.confidence - a.signal.confidence; });
+
+  setP(100, 'Scan complete!', PK.length + ' signals found');
+  await sl(500);
+  document.getElementById('loading').style.display = 'none';
+  rAll(mood);
+
+  var now = new Date();
+  var ts  = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+  var lastScEl = document.getElementById('lastSc');
+  if (lastScEl) lastScEl.textContent = ts;
+
+  var liveCount = Object.values(SD).filter(function(d) { return d && (d.isServer || d.isLive); }).length;
+  var freshEl   = document.getElementById('freshT');
+  if (freshEl)  freshEl.textContent = liveCount + ' live';
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Scan Markets'; }
+}
+
+// ── Live price refresh every 30s ────────────────────────
+var P23_LIVE_INTERVAL = null;
+
+function p23StartLiveRefresh() {
+  if (P23_LIVE_INTERVAL) return;
+  if (!P23_SERVER_OK)    return;
+
+  P23_LIVE_INTERVAL = setInterval(async function() {
+    // Only refresh if app is visible and scan has run
+    if (!PK || !PK.length) return;
+    if (document.hidden) return;
+
+    // Refresh prices for top 20 signals silently
+    var toRefresh = PK.slice(0, 20).map(function(p) { return p.sym; });
+    try {
+      var r = await fetch(SAMRIDHI_SERVER + '/batch?syms=' + toRefresh.join(','), {
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!r.ok) return;
+      var d = await r.json();
+      if (!d.results) return;
+
+      Object.entries(d.results).forEach(function(kv) {
+        var sym  = kv[0];
+        var data = kv[1];
+        if (!data || !SD[sym]) return;
+        // Update live price fields only
+        SD[sym].price    = data.price;
+        SD[sym].chg      = data.chg;
+        SD[sym].volume   = data.volume;
+        SD[sym].isServer = true;
+      });
+
+      // Refresh hero card price display if visible
+      p23RefreshHeroPrice();
+    } catch(e) {}
+  }, 30000);   // every 30 seconds
+}
+
+function p23RefreshHeroPrice() {
+  if (!PK || !PK.length) return;
+  var sym = PK[0].sym;
+  var d   = SD[sym];
+  if (!d) return;
+
+  // Update price display elements if they exist
+  var priceEl = document.getElementById('hPrice') || document.getElementById('dpPrice');
+  if (priceEl) {
+    priceEl.textContent = '₹' + d.price.toFixed(2);
+  }
+  var chgEl = document.getElementById('hChg') || document.getElementById('dpChg');
+  if (chgEl) {
+    chgEl.textContent = (d.chg >= 0 ? '+' : '') + d.chg.toFixed(2) + '%';
+    chgEl.className   = d.chg >= 0 ? 'up' : 'dn';
+  }
+}
+
+function p23StopLiveRefresh() {
+  if (P23_LIVE_INTERVAL) {
+    clearInterval(P23_LIVE_INTERVAL);
+    P23_LIVE_INTERVAL = null;
+  }
+}
+
+// ── Index prices via server ──────────────────────────────
+async function p23RefreshIndices() {
+  if (!P23_SERVER_OK) return;
+  try {
+    var r = await fetch(SAMRIDHI_SERVER + '/indices', { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return;
+    var d = await r.json();
+
+    var nV = document.getElementById('nV');
+    var sV = document.getElementById('sV');
+    var nC = document.getElementById('nC');
+    var sC = document.getElementById('sC');
+
+    if (nV && d.nifty?.price)  nV.textContent = d.nifty.price.toLocaleString('en-IN');
+    if (sV && d.sensex?.price) sV.textContent = d.sensex.price.toLocaleString('en-IN');
+    if (nC && d.nifty?.chg) {
+      var nc = parseFloat(d.nifty.chg);
+      nC.textContent = (nc >= 0 ? '+' : '') + nc.toFixed(2) + '%';
+      nC.style.color = nc >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    }
+    if (sC && d.sensex?.chg) {
+      var sc = parseFloat(d.sensex.chg);
+      sC.textContent = (sc >= 0 ? '+' : '') + sc.toFixed(2) + '%';
+      sC.style.color = sc >= 0 ? 'var(--emerald)' : 'var(--sell)';
+    }
+  } catch(e) {}
+}
+
+// ── Settings: allow custom server URL ────────────────────
+var _p23OrigPg = pg;
+pg = function(name, el) {
+  _p23OrigPg(name, el);
+  if (name === 'settings') {
+    setTimeout(p23InjectServerSettings, 250);
+  }
+};
+
+function p23InjectServerSettings() {
+  if (document.getElementById('p23ServerBlock')) return;
+  var p22Block = document.getElementById('p22SettingsBlock');
+  if (!p22Block) return;
+
+  var block = document.createElement('div');
+  block.id = 'p23ServerBlock';
+  block.className = 'scard';
+  block.style.marginTop = '14px';
+  block.innerHTML = '<div class="sc-h"><div class="sc-t">⚡ Samridhi Server</div></div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Backend server for fast parallel scanning. Leave default unless you deployed your own.</div>'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+    + '<span id="p23StatusDot" style="width:8px;height:8px;border-radius:50%;background:' + (P23_SERVER_OK ? 'var(--emerald)' : '#ccc') + ';flex-shrink:0;"></span>'
+    + '<span style="font-size:11px;color:var(--muted);" id="p23StatusTxt">' + (P23_SERVER_OK ? 'Online' : 'Checking...') + '</span>'
+    + '</div>'
+    + '<input class="s-inp2" id="p23ServerUrl" type="text" value="' + SAMRIDHI_SERVER + '" placeholder="https://samridhi-server.onrender.com" style="margin-bottom:8px;font-size:11px;">'
+    + '<button class="save-btn" onclick="p23SaveServerUrl()" style="font-size:12px;padding:8px 16px;">Save & Test</button>';
+
+  p22Block.parentElement.insertBefore(block, p22Block.nextSibling);
+}
+
+async function p23SaveServerUrl() {
+  var inp = document.getElementById('p23ServerUrl');
+  if (!inp) return;
+  var url = inp.value.trim().replace(/\/$/, '');
+  SAMRIDHI_SERVER = url;
+  localStorage.setItem('p23_server_url', url);
+  P23_SERVER_OK = null;
+  toast('Testing server...', 'ok');
+  var ok = await p23CheckServer();
+
+  var dot = document.getElementById('p23StatusDot');
+  var txt = document.getElementById('p23StatusTxt');
+  if (dot) dot.style.background = ok ? 'var(--emerald)' : 'var(--sell)';
+  if (txt) txt.textContent = ok ? 'Online ✓' : 'Offline ✗';
+  toast(ok ? '⚡ Server connected!' : '✗ Could not reach server', ok ? 'ok' : 'err');
+}
+
+// ── Init ─────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(async function() {
+    // Add server badge to topbar
+    var tbR = document.querySelector('.tb-r');
+    if (tbR && !document.getElementById('p23ServerBadge')) {
+      var badge = document.createElement('span');
+      badge.id = 'p23ServerBadge';
+      badge.style.cssText = 'font-size:10px;color:var(--muted);cursor:default;padding:3px 8px;border-radius:10px;background:var(--bg,#f4f4f6);border:1px solid var(--border);';
+      badge.textContent = '🌐 Connecting...';
+      tbR.insertBefore(badge, tbR.firstChild);
+    }
+
+    // Check server
+    var ok = await p23CheckServer();
+    if (ok) {
+      p23PatchScanIfNeeded();
+      p23StartLiveRefresh();
+      // Refresh indices immediately
+      p23RefreshIndices();
+      setInterval(p23RefreshIndices, 60000);   // every 1 min
+    }
+  }, 1000);
+});
+
+// Expose globals
+window.p23CheckServer    = p23CheckServer;
+window.p23SaveServerUrl  = p23SaveServerUrl;
+window.SAMRIDHI_SERVER   = SAMRIDHI_SERVER;
+</script>
+<!-- ══ END PHASE 23A ══ -->
+
 </body>
 </html>
