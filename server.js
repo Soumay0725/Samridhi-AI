@@ -58,7 +58,7 @@ async function fetchLivePrice(ySym) {
 
   try {
     const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?range=1d&interval=1m&includePrePost=false`;
-    const resp = await axios.get(url, { timeout: 8000, headers: HEADERS });
+    const resp = await axios.get(url, { timeout: 6000, headers: HEADERS });
     const result = resp.data?.chart?.result?.[0];
     if (!result) return null;
 
@@ -90,7 +90,7 @@ async function fetchHistorical(ySym) {
 
   try {
     const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?range=1y&interval=1d&includePrePost=false`;
-    const resp = await axios.get(url, { timeout: 12000, headers: HEADERS });
+    const resp = await axios.get(url, { timeout: 8000, headers: HEADERS });
     const result = resp.data?.chart?.result?.[0];
     if (!result) return null;
 
@@ -120,10 +120,10 @@ async function fetchHistorical(ySym) {
 async function fetchStock(sym) {
   const ySym = toYahoo(sym);
 
-  // Fetch live price and historical data in parallel
+  // Fetch live price and historical data in parallel with individual timeouts
   const [live, hist] = await Promise.all([
-    fetchLivePrice(ySym),
-    fetchHistorical(ySym)
+    fetchLivePrice(ySym).catch(() => null),
+    fetchHistorical(ySym).catch(() => null)
   ]);
 
   if (!live && !hist) return null;
@@ -169,11 +169,11 @@ async function fetchBatch(symbols, concurrency = 10) {
       const sym = queue.shift();
       if (!sym) break;
       results[sym] = await fetchStock(sym);
-      await new Promise(r => setTimeout(r, 60));
+      await new Promise(r => setTimeout(r, 30));
     }
   }
 
-  await Promise.all(Array.from({ length: concurrency }, worker));
+  await Promise.allSettled(Array.from({ length: concurrency }, worker));
   return results;
 }
 
