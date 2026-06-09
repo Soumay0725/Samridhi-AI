@@ -11286,21 +11286,49 @@ function p23InjectUpstoxSettings() {
   var lastCard = document.querySelector('.scard:last-of-type');
   if (!lastCard) return;
 
+  var savedToken = localStorage.getItem('p23_upstox_token') || '';
+
   var block = document.createElement('div');
   block.id  = 'p23UpstoxSettings';
   block.className = 'scard';
   block.style.marginTop = '14px';
   block.innerHTML =
     '<div class="sc-h"><div class="sc-t">📡 Upstox Live Prices</div></div>'
-    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;">Connects to your Upstox account for paisa-accurate NSE live prices. Login required once per day.</div>'
-    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">'
-    + '<span style="width:8px;height:8px;border-radius:50%;background:' + (P23_AUTH_OK ? 'var(--emerald)' : '#ccc') + ';" id="p23UpstoxDot"></span>'
-    + '<span style="font-size:12px;color:var(--muted);" id="p23UpstoxStatus">' + (P23_AUTH_OK ? 'Connected — paisa-accurate live prices active' : 'Not connected — using Yahoo Finance prices') + '</span>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Paste your Upstox Access Token for paisa-accurate NSE prices.<br>Get it from: <b>account.upstox.com → Apps → Samridhi-AI → Generate</b></div>'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+    + '<span style="width:8px;height:8px;border-radius:50%;background:' + (P23_AUTH_OK ? 'var(--emerald)' : '#ccc') + ';flex-shrink:0;" id="p23UpstoxDot"></span>'
+    + '<span style="font-size:12px;color:var(--muted);" id="p23UpstoxStatus">' + (P23_AUTH_OK ? '✓ Connected — paisa-accurate live prices active' : 'Not connected — using Yahoo Finance prices') + '</span>'
     + '</div>'
-    + '<button onclick="p23StartUpstoxLogin()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Sora\',sans-serif;">'
-    + (P23_AUTH_OK ? '🔄 Re-login to Upstox' : '🔐 Login to Upstox') + '</button>';
+    + '<textarea id="p23TokenInput" placeholder="Paste access token here..." style="width:100%;height:65px;border-radius:10px;border:1px solid var(--border);padding:10px;font-size:11px;font-family:JetBrains Mono,monospace;background:var(--bg);color:var(--navy);resize:none;margin-bottom:8px;box-sizing:border-box;">' + savedToken + '</textarea>'
+    + '<button onclick="p23SaveManualToken()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:Sora,sans-serif;width:100%;">💾 Save Token & Activate</button>'
+    + '<div style="font-size:10px;color:var(--muted);margin-top:6px;">Token expires daily at midnight IST. Regenerate each morning.</div>';
 
   lastCard.parentElement.insertBefore(block, lastCard.nextSibling);
+}
+
+async function p23SaveManualToken() {
+  var inp = document.getElementById('p23TokenInput');
+  if (!inp) return;
+  var token = inp.value.trim();
+  if (!token) { toast('Please paste your Upstox access token', 'err'); return; }
+  localStorage.setItem('p23_upstox_token', token);
+  try {
+    var r = await fetch(P23_SERVER + '/auth/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    });
+    var d = await r.json();
+    if (d.status === 'ok') {
+      P23_AUTH_OK = true;
+      toast('✅ Upstox connected! Prices now paisa-accurate.', 'ok');
+      p23UpdateTopbarBadge();
+      var dot = document.getElementById('p23UpstoxDot');
+      var sts = document.getElementById('p23UpstoxStatus');
+      if (dot) dot.style.background = 'var(--emerald)';
+      if (sts) sts.textContent = '✓ Connected — paisa-accurate live prices active';
+    } else { toast('Token rejected — check if it is valid', 'err'); }
+  } catch(e) { toast('Could not reach Samridhi Server', 'err'); }
 }
 
 // ── Init on load ─────────────────────────────────────────
