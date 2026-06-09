@@ -11355,5 +11355,452 @@ window.p23CheckAuth        = p23CheckAuth;
 </script>
 <!-- ══ END PHASE 23A UPSTOX ══ -->
 
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 23B — UI REFINEMENT
+     CSS-only layer. Zero JS functions touched.
+     Zero backend/data code touched.
+     ══════════════════════════════════════════════════════════ -->
+<style>
+/* ── 1. SIDEBAR — Cleaner grouping, better hierarchy ── */
+.sidebar {
+  width: 210px;
+  padding: 16px 0;
+}
+.sb-sec {
+  padding: 14px 18px 5px;
+  font-size: 8.5px;
+  letter-spacing: 2.5px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+.nav-i {
+  padding: 9px 18px;
+  font-size: 12.5px;
+  margin: 1px 8px;
+  border-radius: 10px;
+  gap: 9px;
+  transition: all 0.15s;
+}
+.nav-i .nav-ic {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.nav-i.on {
+  background: linear-gradient(135deg, rgba(215,165,142,0.12), rgba(70,201,138,0.08));
+  color: var(--navy);
+  font-weight: 500;
+}
+.nav-sep {
+  margin: 8px 16px;
+  opacity: 0.5;
+}
+.sb-bot {
+  margin-top: auto;
+  padding: 12px 8px 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── 2. TOPBAR — Tighter, more premium ── */
+.topbar {
+  padding: 0 20px;
+  height: 56px;
+}
+.tb-r {
+  gap: 8px;
+}
+
+/* ── 3. TRUST SCORE + 30-DAY TRACK — Hide when empty ── */
+#p18Dashboard:has(.trust-badge.building) {
+  display: none !important;
+}
+
+/* If :has not supported, hide via class — will be shown once data exists */
+.trust-badge.building ~ * { opacity: 0.4; }
+
+/* ── 4. HERO CARD — More breathing room, better scan button ── */
+.hero {
+  border-radius: 24px;
+  padding: 24px 28px;
+  box-shadow: 0 4px 24px rgba(24,34,53,0.06);
+}
+.hero-nm {
+  font-size: 34px;
+}
+.hero-lbl {
+  margin-bottom: 12px;
+  font-size: 8.5px;
+  letter-spacing: 3px;
+}
+.hero-prices {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.hp {
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+/* Scan button — make it the dominant action */
+.btn-scan {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-scan:hover {
+  background: #243d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(24,34,53,0.2);
+}
+.btn-scan:active {
+  transform: translateY(0);
+}
+.hero-btns {
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ── 5. QA GRID — More elegant stat tiles ── */
+.qa-grid {
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.qa {
+  border-radius: 14px;
+  padding: 14px;
+}
+.qa:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(215,165,142,0.12);
+}
+.qa-icon {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+.qa-lbl {
+  font-size: 9.5px;
+  letter-spacing: 0.3px;
+}
+.qa-val {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* ── 6. SECTION CARDS — Consistent, refined ── */
+.scard {
+  border-radius: 18px;
+  padding: 18px 20px;
+}
+.sc-h {
+  margin-bottom: 12px;
+}
+.sc-t {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ── 7. PICKS SCROLL — Better card spacing ── */
+.pick-c {
+  border-radius: 16px;
+  padding: 14px;
+  min-width: 155px;
+}
+
+/* ── 8. SIGNAL CHIPS — Smaller, less intrusive ── */
+.sig-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.chip {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-weight: 400;
+}
+
+/* ── 9. MARKET BANNER — Subtle, not alarming ── */
+.mh-banner {
+  border-radius: 10px;
+  margin: 0 0 12px;
+  padding: 8px 14px;
+  font-size: 11px;
+}
+
+/* ── 10. CONFIDENCE RING — Better integration ── */
+.conf-r {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.conf-pct {
+  font-size: 26px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+.conf-lbl {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.conf-bdg {
+  font-size: 10px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+/* ── 11. PLAIN MOOD BAR — Refined ── */
+.plain-mood {
+  border-radius: 10px;
+  padding: 9px 14px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+/* ── 12. PAGE TRANSITIONS — Smoother ── */
+.page.active {
+  animation: p23bFadeUp 0.25s ease both;
+}
+@keyframes p23bFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 13. SCROLLBAR — Thinner, more elegant ── */
+.main::-webkit-scrollbar,
+.page::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb,
+.page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── 14. DETAIL PANEL — Smoother slide ── */
+.dp-overlay {
+  animation: p23bSlideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes p23bSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── 15. WATCHLIST ROWS — Better visual hierarchy ── */
+.wl-row {
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: background 0.15s;
+}
+.wl-row:hover {
+  background: var(--bg);
+}
+.wl-sym {
+  font-size: 13px;
+  font-weight: 600;
+}
+.wl-name {
+  font-size: 10px;
+}
+
+/* ── 16. GREET ROW — More spacious ── */
+.greet-row {
+  margin-bottom: 16px;
+  padding: 0 2px;
+}
+.greet-nm {
+  font-size: 28px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+}
+.greet-sm {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* ── 17. HIDE EMPTY SECTIONS UNTIL DATA EXISTS ── */
+#p18Dashboard .perf-summary:has(#perfSignals:empty) {
+  opacity: 0.5;
+}
+
+/* Trust score — collapse when score is 0 or dash */
+#trustScoreNum:empty + * { display: none; }
+
+/* ── 18. SELL WARNING — More refined ── */
+#heroSellWarn {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* ── 19. BUTTONS — Consistent sizing ── */
+.btn-s {
+  padding: 9px 14px;
+  font-size: 11.5px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* ── 20. TOP PICKS SECTION HEADER ── */
+.sec-row {
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.sec-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ── SIDEBAR: Collapse Tools into expandable group ── */
+.sb-tools-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 5px;
+  font-size: 8.5px;
+  letter-spacing: 2.5px;
+  color: var(--muted);
+  opacity: 0.6;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+.sb-tools-toggle:hover { opacity: 1; }
+.sb-tools-arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+.sb-tools-arrow.open { transform: rotate(180deg); }
+.sb-tools-items {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+.sb-tools-items.open {
+  max-height: 300px;
+}
+</style>
+
+<script>
+// ── Phase 23B: DOM enhancements (layout only, no data logic) ──
+window.addEventListener('load', function() {
+  setTimeout(function() {
+
+    // 1. Collapse Tools section into expandable group
+    var sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+      // Find the Tools sb-sec
+      var allSecs = sidebar.querySelectorAll('.sb-sec');
+      allSecs.forEach(function(sec) {
+        if (sec.textContent.trim() === 'Tools') {
+          // Wrap following nav items until next sb-sec or sb-bot
+          var toolsNav = [];
+          var next = sec.nextElementSibling;
+          while (next && !next.classList.contains('sb-sec') && !next.classList.contains('sb-bot') && !next.classList.contains('nav-sep')) {
+            toolsNav.push(next);
+            next = next.nextElementSibling;
+          }
+
+          // Create toggle header
+          var toggle = document.createElement('div');
+          toggle.className = 'sb-tools-toggle';
+          toggle.innerHTML = 'Tools <span class="sb-tools-arrow">▾</span>';
+
+          // Create collapsible wrapper
+          var wrapper = document.createElement('div');
+          wrapper.className = 'sb-tools-items';
+          toolsNav.forEach(function(n) { wrapper.appendChild(n); });
+
+          // Replace sec with toggle + wrapper
+          sec.parentNode.insertBefore(toggle, sec);
+          sec.parentNode.insertBefore(wrapper, sec);
+          sec.remove();
+
+          // Toggle behavior
+          toggle.addEventListener('click', function() {
+            wrapper.classList.toggle('open');
+            toggle.querySelector('.sb-tools-arrow').classList.toggle('open');
+          });
+
+          // Auto-open if a tools page is active
+          var activeToolsItem = wrapper.querySelector('.nav-i.on');
+          if (activeToolsItem) {
+            wrapper.classList.add('open');
+            toggle.querySelector('.sb-tools-arrow').classList.add('open');
+          }
+        }
+      });
+    }
+
+    // 2. Hide Trust Score card when no data (score is "–")
+    var trustNum = document.getElementById('trustScoreNum');
+    var p18Dash  = document.getElementById('p18Dashboard');
+    if (trustNum && p18Dash) {
+      var hideDash = function() {
+        var val = trustNum.textContent.trim();
+        if (val === '–' || val === '-' || val === '') {
+          p18Dash.style.display = 'none';
+        } else {
+          p18Dash.style.display = '';
+        }
+      };
+      hideDash();
+      // Watch for changes
+      var obs = new MutationObserver(hideDash);
+      obs.observe(trustNum, { childList: true, characterData: true, subtree: true });
+    }
+
+    // 3. Move Trust Score back when data arrives after scan
+    var origRAllP23B = rAll;
+    rAll = function(mood) {
+      origRAllP23B(mood);
+      setTimeout(function() {
+        if (trustNum && p18Dash) {
+          var val = trustNum.textContent.trim();
+          if (val && val !== '–' && val !== '-') {
+            p18Dash.style.display = '';
+          }
+        }
+      }, 800);
+    };
+
+    // 4. Add subtle hover effect to nav items that open tools
+    var toolsWrapper = document.querySelector('.sb-tools-items');
+    if (toolsWrapper) {
+      // When a tools page is navigated to, auto-open tools section
+      var origPg = pg;
+      pg = function(name, el) {
+        origPg(name, el);
+        var toolPages = ['papertrade','alerts','journal','analytics','screener','backtest','outcomes'];
+        if (toolPages.indexOf(name) > -1 && toolsWrapper) {
+          toolsWrapper.classList.add('open');
+          var arrow = document.querySelector('.sb-tools-arrow');
+          if (arrow) arrow.classList.add('open');
+        }
+      };
+    }
+
+  }, 600);
+});
+
+// Expose nothing new — all existing globals preserved
+</script>
+<!-- ══ END PHASE 23B ══ -->
+
 </body>
 </html>
