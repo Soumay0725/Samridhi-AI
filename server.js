@@ -69,6 +69,7 @@ app.post('/auth/token', async (req, res) => {
 
   try {
     // Upstox requires form-encoded body
+    // Upstox v2 token endpoint uses 'client_id' and 'client_secret'
     const params = new URLSearchParams();
     params.append('code',          code);
     params.append('client_id',     UPSTOX_API_KEY);
@@ -76,10 +77,18 @@ app.post('/auth/token', async (req, res) => {
     params.append('redirect_uri',  REDIRECT_URI);
     params.append('grant_type',    'authorization_code');
 
+    console.log('[Auth] Exchanging code with client_id:', UPSTOX_API_KEY);
+
     const resp = await axios.post(
       'https://api.upstox.com/v2/login/authorization/token',
       params.toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' } }
+      {
+        headers: {
+          'Content-Type':  'application/x-www-form-urlencoded',
+          'Accept':        'application/json',
+          'Api-Version':   '2.0'
+        }
+      }
     );
 
     accessToken = resp.data.access_token;
@@ -95,6 +104,18 @@ app.post('/auth/token', async (req, res) => {
     console.error('[Auth] Token exchange failed:', e?.response?.data || e.message);
     res.status(500).json({ error: 'Token exchange failed', details: e?.response?.data });
   }
+});
+
+// ── Manual token input (paste from developer console) ───
+app.post('/auth/manual', (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'token required' });
+  accessToken = token;
+  const midnight = new Date();
+  midnight.setHours(23, 59, 0, 0);
+  tokenExpiry = midnight.getTime();
+  console.log('[Auth] Manual token set, expires:', new Date(tokenExpiry).toISOString());
+  res.json({ status: 'ok', expires: tokenExpiry });
 });
 
 // ── Token status ─────────────────────────────────────────
