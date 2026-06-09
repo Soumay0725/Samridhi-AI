@@ -68,15 +68,19 @@ app.post('/auth/token', async (req, res) => {
   if (!code) return res.status(400).json({ error: 'code required' });
 
   try {
-    const resp = await axios.post('https://api.upstox.com/v2/login/authorization/token', {
-      code,
-      client_id:     UPSTOX_API_KEY,
-      client_secret: UPSTOX_API_SECRET,
-      redirect_uri:  REDIRECT_URI,
-      grant_type:    'authorization_code'
-    }, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
+    // Upstox requires form-encoded body
+    const params = new URLSearchParams();
+    params.append('code',          code);
+    params.append('client_id',     UPSTOX_API_KEY);
+    params.append('client_secret', UPSTOX_API_SECRET);
+    params.append('redirect_uri',  REDIRECT_URI);
+    params.append('grant_type',    'authorization_code');
+
+    const resp = await axios.post(
+      'https://api.upstox.com/v2/login/authorization/token',
+      params.toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' } }
+    );
 
     accessToken = resp.data.access_token;
     // Upstox tokens expire at midnight IST — set expiry to midnight
