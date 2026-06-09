@@ -11041,5 +11041,291 @@ window.p22ShowNewsDetail  = p22ShowNewsDetail;
 </script>
 <!-- ══ END PHASE 22 ══ -->
 
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 23A — UPSTOX LIVE PRICES
+     Paisa-accurate NSE data via Upstox API
+     ══════════════════════════════════════════════════════════ -->
+<style>
+/* Upstox login banner */
+#p23UpstoxBanner {
+  display: none;
+  background: rgba(99,91,255,0.08);
+  border-bottom: 1px solid rgba(99,91,255,0.2);
+  padding: 10px 20px;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #635BFF;
+  font-weight: 500;
+  position: sticky;
+  top: 56px;
+  z-index: 88;
+}
+#p23UpstoxBanner.show { display: flex; }
+.p23-login-btn {
+  background: #635BFF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+  font-family: 'Sora', sans-serif;
+}
+</style>
+
+<!-- Upstox login banner -->
+<div id="p23UpstoxBanner">
+  <span>🔐</span>
+  <span>Connect Upstox for paisa-accurate live prices</span>
+  <button class="p23-login-btn" onclick="p23StartUpstoxLogin()">Connect Upstox</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  PHASE 23A — UPSTOX LIVE PRICE INTEGRATION
+// ════════════════════════════════════════════════════════
+
+var P23_SERVER     = 'https://samridhi-ai-new-backend-server.onrender.com';
+var P23_UPSTOX_KEY = 'f1a6b64f-7cad-41fa-88dc-395a473de524';
+var P23_REDIRECT   = 'https://soumay0725.github.io/Samridhi-AI/';
+var P23_AUTH_OK    = false;
+var P23_LIVE_CACHE = {};  // { SYM: { price, chg, ts } }
+var CACHE_TTL      = 15000;
+
+// ── Check if we have a valid token on server ─────────────
+async function p23CheckAuth() {
+  try {
+    var r = await fetch(P23_SERVER + '/auth/status', { signal: AbortSignal.timeout(6000) });
+    var d = await r.json();
+    P23_AUTH_OK = d.authenticated;
+    return P23_AUTH_OK;
+  } catch(e) {
+    P23_AUTH_OK = false;
+    return false;
+  }
+}
+
+// ── Start Upstox OAuth login ─────────────────────────────
+async function p23StartUpstoxLogin() {
+  try {
+    var r = await fetch(P23_SERVER + '/auth/url');
+    var d = await r.json();
+    if (d.url) {
+      // Open Upstox login in same tab — it will redirect back with ?code=
+      window.location.href = d.url;
+    }
+  } catch(e) {
+    toast('Could not reach Samridhi Server', 'err');
+  }
+}
+
+// ── Handle redirect back from Upstox with auth code ─────
+async function p23HandleAuthCallback() {
+  var params = new URLSearchParams(window.location.search);
+  var code   = params.get('code');
+  if (!code) return false;
+
+  try {
+    toast('Connecting to Upstox...', 'ok');
+    var r = await fetch(P23_SERVER + '/auth/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ code })
+    });
+    var d = await r.json();
+    if (d.status === 'ok') {
+      P23_AUTH_OK = true;
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast('✅ Upstox connected! Prices now paisa-accurate.', 'ok');
+      document.getElementById('p23UpstoxBanner').classList.remove('show');
+      return true;
+    }
+  } catch(e) {
+    toast('Upstox connection failed', 'err');
+  }
+  return false;
+}
+
+// ── Fetch live prices for all stocks via server batch ────
+async function p23FetchLivePrices(symbols) {
+  if (!P23_AUTH_OK) return null;
+
+  try {
+    var symsStr = symbols.join(',');
+    var r = await fetch(P23_SERVER + '/batch?syms=' + encodeURIComponent(symsStr), {
+      signal: AbortSignal.timeout(30000)
+    });
+    var d = await r.json();
+
+    if (d.error === 'Not authenticated' || d.needsAuth) {
+      P23_AUTH_OK = false;
+      p23ShowLoginBanner();
+      return null;
+    }
+
+    return d.results || null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// ── Fetch historical data for a stock ───────────────────
+async function p23FetchHistory(sym) {
+  try {
+    var r = await fetch(P23_SERVER + '/history/' + sym, { signal: AbortSignal.timeout(12000) });
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ── Override fetchYahoo to use Upstox for live price ────
+var _p23OrigFetchYahoo = fetchYahoo;
+
+fetchYahoo = async function(sym) {
+  // Get historical data from Yahoo (for RSI/MACD/SMA indicators)
+  var hist = await _p23OrigFetchYahoo(sym);
+  if (!hist) return null;
+
+  // If Upstox is authenticated, override the price with live Upstox price
+  if (P23_AUTH_OK) {
+    try {
+      var now    = Date.now();
+      var cached = P23_LIVE_CACHE[sym];
+      var livePrice;
+
+      if (cached && (now - cached.ts) < CACHE_TTL) {
+        livePrice = cached;
+      } else {
+        var r = await fetch(P23_SERVER + '/quote/' + sym, {
+          signal: AbortSignal.timeout(6000)
+        });
+        if (r.ok) {
+          var q = await r.json();
+          if (q.price && q.price > 0) {
+            livePrice = { price: q.price, chg: q.chg, prevClose: q.prevClose, volume: q.volume, ts: now };
+            P23_LIVE_CACHE[sym] = livePrice;
+          }
+        }
+      }
+
+      if (livePrice) {
+        hist.price     = livePrice.price;
+        hist.chg       = livePrice.chg;
+        hist.prevClose = livePrice.prevClose;
+        hist.volume    = livePrice.volume || hist.volume;
+        hist.isLive    = true;
+        hist.source    = 'upstox';
+        // Update last close in array to match live price
+        if (hist.closes && hist.closes.length > 0) {
+          hist.closes[hist.closes.length - 1] = livePrice.price;
+        }
+      }
+    } catch(e) { /* keep Yahoo price as fallback */ }
+  }
+
+  return hist;
+};
+
+// ── Hook into rAll to refresh live prices after scan ────
+var _p23UpstoxRAll = rAll;
+rAll = function(mood) {
+  _p23UpstoxRAll(mood);
+  setTimeout(function() {
+    p23UpdateTopbarBadge();
+  }, 500);
+};
+
+// ── Update topbar badge ──────────────────────────────────
+function p23UpdateTopbarBadge() {
+  var badge = document.getElementById('p23UpstoxBadge');
+  if (!badge) {
+    var tbR = document.querySelector('.tb-r, .topbar-right');
+    if (tbR) {
+      badge = document.createElement('span');
+      badge.id = 'p23UpstoxBadge';
+      badge.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:10px;font-weight:600;cursor:pointer;';
+      tbR.insertBefore(badge, tbR.firstChild);
+    }
+  }
+  if (!badge) return;
+
+  if (P23_AUTH_OK) {
+    badge.textContent = '📡 Upstox Live';
+    badge.style.background = 'rgba(99,91,255,0.1)';
+    badge.style.color = '#635BFF';
+    badge.style.border = '1px solid rgba(99,91,255,0.25)';
+    badge.onclick = null;
+  } else {
+    badge.textContent = '🔌 Connect Upstox';
+    badge.style.background = 'rgba(99,91,255,0.08)';
+    badge.style.color = '#635BFF';
+    badge.style.border = '1px solid rgba(99,91,255,0.2)';
+    badge.onclick = p23StartUpstoxLogin;
+  }
+}
+
+function p23ShowLoginBanner() {
+  var banner = document.getElementById('p23UpstoxBanner');
+  if (banner) banner.classList.add('show');
+}
+
+// ── Inject Upstox section in Settings ───────────────────
+var _p23UpstoxPg = pg;
+pg = function(name, el) {
+  _p23UpstoxPg(name, el);
+  if (name === 'settings') {
+    setTimeout(p23InjectUpstoxSettings, 250);
+  }
+};
+
+function p23InjectUpstoxSettings() {
+  if (document.getElementById('p23UpstoxSettings')) return;
+  var lastCard = document.querySelector('.scard:last-of-type');
+  if (!lastCard) return;
+
+  var block = document.createElement('div');
+  block.id  = 'p23UpstoxSettings';
+  block.className = 'scard';
+  block.style.marginTop = '14px';
+  block.innerHTML =
+    '<div class="sc-h"><div class="sc-t">📡 Upstox Live Prices</div></div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;">Connects to your Upstox account for paisa-accurate NSE live prices. Login required once per day.</div>'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">'
+    + '<span style="width:8px;height:8px;border-radius:50%;background:' + (P23_AUTH_OK ? 'var(--emerald)' : '#ccc') + ';" id="p23UpstoxDot"></span>'
+    + '<span style="font-size:12px;color:var(--muted);" id="p23UpstoxStatus">' + (P23_AUTH_OK ? 'Connected — paisa-accurate live prices active' : 'Not connected — using Yahoo Finance prices') + '</span>'
+    + '</div>'
+    + '<button onclick="p23StartUpstoxLogin()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Sora\',sans-serif;">'
+    + (P23_AUTH_OK ? '🔄 Re-login to Upstox' : '🔐 Login to Upstox') + '</button>';
+
+  lastCard.parentElement.insertBefore(block, lastCard.nextSibling);
+}
+
+// ── Init on load ─────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(async function() {
+    // Handle OAuth callback first
+    var authDone = await p23HandleAuthCallback();
+
+    if (!authDone) {
+      // Check if already authenticated
+      var ok = await p23CheckAuth();
+      if (!ok) {
+        p23ShowLoginBanner();
+      }
+    }
+
+    p23UpdateTopbarBadge();
+  }, 1000);
+});
+
+// Expose globals
+window.p23StartUpstoxLogin = p23StartUpstoxLogin;
+window.p23CheckAuth        = p23CheckAuth;
+</script>
+<!-- ══ END PHASE 23A UPSTOX ══ -->
+
 </body>
 </html>
