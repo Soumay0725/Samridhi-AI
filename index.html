@@ -791,6 +791,8 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div class="logo-tag">Prosperity Intelligence</div>
     </div>
     <div class="tb-r">
+      <!-- Upstox Badge — always visible -->
+      <span id="p23UpstoxBadge" onclick="p23StartUpstoxLogin()" style="font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600;cursor:pointer;background:rgba(99,91,255,0.08);color:#635BFF;border:1px solid rgba(99,91,255,0.2);">🔌 Connect Upstox</span>
       <!-- Phase 11: Strategy Mode -->
       <div class="strat-mode-wrap" id="stratModeWrap">
         <button class="strat-btn" data-mode="safe" onclick="setStratMode('safe',this)" title="Conservative -- high confidence signals only">🛡</button>
@@ -11375,21 +11377,15 @@ async function p23SaveManualToken() {
 
 // ── Init on load ─────────────────────────────────────────
 window.addEventListener('load', function() {
+  // Show badge immediately on DOM ready — no server check needed
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(p23UpdateTopbarBadge, 200);
+  });
+
   setTimeout(async function() {
-    // Show badge immediately — don't wait for server
     p23UpdateTopbarBadge();
-
-    // Handle OAuth callback first
     var authDone = await p23HandleAuthCallback();
-
-    if (!authDone) {
-      // Check if already authenticated
-      var ok = await p23CheckAuth();
-      if (!ok) {
-        // Don't show banner — user can click topbar button
-      }
-    }
-
+    if (!authDone) await p23CheckAuth();
     p23UpdateTopbarBadge();
   }, 500);
 });
