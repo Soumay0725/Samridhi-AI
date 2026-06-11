@@ -11802,5 +11802,557 @@ window.addEventListener('load', function() {
 </script>
 <!-- ══ END PHASE 23B ══ -->
 
+<!-- ══════════════════════════════════════════════════════════
+     PHASE 24 — PAPER TRADING + BACKTESTING UPGRADE
+     24A: Virtual portfolio dashboard, live P&L, one-tap paper trade
+     24B: Monthly breakdown, equity curve, sector analysis
+     ══════════════════════════════════════════════════════════ -->
+
+<style>
+/* ── 24A Paper Trade Dashboard ── */
+.p24-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.p24-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+}
+.p24-stat-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.p24-stat-val.green { color: var(--emerald); }
+.p24-stat-val.red   { color: var(--sell); }
+.p24-stat-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* Live position card */
+.p24-pos-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+  transition: box-shadow 0.15s;
+}
+.p24-pos-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.p24-pos-sym {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.p24-pos-name {
+  font-size: 10px;
+  color: var(--muted);
+}
+.p24-pos-pnl {
+  margin-left: auto;
+  text-align: right;
+}
+.p24-pos-pnl-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+.p24-pos-pnl-pct {
+  font-size: 10px;
+  color: var(--muted);
+}
+.p24-pos-exit {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--navy);
+  font-family: 'Sora', sans-serif;
+}
+.p24-pos-exit:hover { background: var(--sell); color: #fff; border-color: var(--sell); }
+
+/* Paper Trade button on hero card */
+.p24-pt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(70,201,138,0.1);
+  color: var(--emerald);
+  border: 1px solid rgba(70,201,138,0.25);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.15s;
+}
+.p24-pt-btn:hover { background: var(--emerald); color: #fff; }
+
+/* ── 24B Backtest Upgrades ── */
+.p24-bt-equity {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.p24-bt-equity-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.p24-bt-monthly {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+.p24-bt-month {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+}
+.p24-bt-month-name {
+  font-size: 9px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.p24-bt-month-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.p24-bt-verdict {
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 14px;
+  border-left: 4px solid var(--emerald);
+}
+.p24-bt-verdict.warn { border-left-color: #B8922A; }
+.p24-bt-verdict.bad  { border-left-color: var(--sell); }
+.p24-bt-verdict-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.p24-bt-verdict-text {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+</style>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  PHASE 24A — PAPER TRADING UPGRADE
+// ════════════════════════════════════════════════════════
+
+var P24_POSITIONS = [];   // active paper trade positions
+var P24_HISTORY   = [];   // closed paper trade history
+var P24_VIRTUAL_CAPITAL = 100000; // ₹1 lakh starting capital
+
+function p24Save() {
+  try {
+    localStorage.setItem('p24_positions', JSON.stringify(P24_POSITIONS));
+    localStorage.setItem('p24_history',   JSON.stringify(P24_HISTORY));
+    localStorage.setItem('p24_capital',   String(P24_VIRTUAL_CAPITAL));
+  } catch(e) {}
+}
+
+function p24Load() {
+  try {
+    var pos = localStorage.getItem('p24_positions');
+    var his = localStorage.getItem('p24_history');
+    var cap = localStorage.getItem('p24_capital');
+    if (pos) P24_POSITIONS = JSON.parse(pos);
+    if (his) P24_HISTORY   = JSON.parse(his);
+    if (cap) P24_VIRTUAL_CAPITAL = parseFloat(cap);
+  } catch(e) {}
+}
+
+// ── Add Paper Trade button to hero card after scan ───────
+var _p24OrigRAll = rAll;
+rAll = function(mood) {
+  _p24OrigRAll(mood);
+  setTimeout(p24InjectHeroButton, 700);
+  setTimeout(p24UpdateLivePnL, 1000);
+};
+
+function p24InjectHeroButton() {
+  if (!PK || !PK.length) return;
+  var sym = PK[0].sym;
+  var sig = PK[0].signal;
+  if (!sig || sig.signal === 'HOLD') return;
+
+  // Remove existing button
+  var existing = document.getElementById('p24HeroBtn');
+  if (existing) existing.remove();
+
+  var btn = document.createElement('button');
+  btn.id = 'p24HeroBtn';
+  btn.className = 'p24-pt-btn';
+  btn.innerHTML = '📋 Paper Trade This';
+  btn.onclick = function() { p24OpenPaperTrade(sym); };
+
+  // Insert after WTD button or scan button
+  var wtdBtn = document.getElementById('p22WtdBtn');
+  if (wtdBtn && wtdBtn.parentElement) {
+    wtdBtn.parentElement.insertBefore(btn, wtdBtn.nextSibling);
+  } else {
+    var heroBtns = document.querySelector('.hero-btns');
+    if (heroBtns) heroBtns.appendChild(btn);
+  }
+}
+
+// ── Open paper trade for a signal ────────────────────────
+function p24OpenPaperTrade(sym) {
+  var sig = SG[sym];
+  var dat = SD[sym];
+  if (!sig || !dat) { toast('Run a scan first', 'err'); return; }
+
+  // Check if already in a paper position
+  var existing = P24_POSITIONS.find(function(p) { return p.sym === sym && p.active; });
+  if (existing) { toast('Already paper trading ' + sym, 'err'); return; }
+
+  // Calculate position size using 2% risk rule
+  var capital    = P24_VIRTUAL_CAPITAL;
+  var riskAmt    = capital * 0.02;
+  var riskPerShare = Math.abs(sig.entry - sig.stopLoss);
+  var qty        = riskPerShare > 0 ? Math.floor(riskAmt / riskPerShare) : 1;
+  var invested   = qty * sig.entry;
+
+  if (invested > capital * 0.5) {
+    qty = Math.floor((capital * 0.5) / sig.entry);
+    invested = qty * sig.entry;
+  }
+
+  var now = new Date();
+  var position = {
+    id:         Date.now(),
+    sym:        sym,
+    name:       NM[sym] || sym,
+    signal:     sig.signal,
+    entry:      sig.entry,
+    target:     sig.target,
+    sl:         sig.stopLoss,
+    qty:        qty,
+    invested:   invested,
+    entryDate:  now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+    entryTime:  now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' }),
+    livePrice:  dat.price,
+    pnl:        0,
+    pnlPct:     0,
+    active:     true,
+    horizon:    sig.horizon || 'Swing'
+  };
+
+  P24_POSITIONS.push(position);
+  P24_VIRTUAL_CAPITAL -= invested;
+  p24Save();
+
+  toast('📋 Paper trade opened: ' + qty + ' shares of ' + sym + ' @ ₹' + sig.entry.toFixed(0), 'ok');
+  p24RenderDashboard();
+}
+
+// ── Exit a paper position ─────────────────────────────────
+function p24ExitPosition(id, exitPrice) {
+  var pos = P24_POSITIONS.find(function(p) { return p.id === id; });
+  if (!pos) return;
+
+  var price = exitPrice || (SD[pos.sym] ? SD[pos.sym].price : pos.entry);
+  var isBuy = pos.signal === 'BUY';
+  var pnl   = isBuy
+    ? (price - pos.entry) * pos.qty
+    : (pos.entry - price) * pos.qty;
+
+  pos.active    = false;
+  pos.exitPrice = price;
+  pos.exitDate  = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+  pos.pnl       = parseFloat(pnl.toFixed(2));
+  pos.pnlPct    = parseFloat(((pnl / pos.invested) * 100).toFixed(2));
+  pos.result    = pnl >= 0 ? 'WIN' : 'LOSS';
+
+  P24_HISTORY.push(Object.assign({}, pos));
+  P24_POSITIONS = P24_POSITIONS.filter(function(p) { return p.id !== id; });
+  P24_VIRTUAL_CAPITAL += pos.invested + pnl;
+  p24Save();
+
+  toast((pnl >= 0 ? '✅' : '❌') + ' Paper trade closed: ' + (pnl >= 0 ? '+' : '') + '₹' + pnl.toFixed(0), pnl >= 0 ? 'ok' : 'err');
+  p24RenderDashboard();
+}
+
+// ── Auto-check target/SL hits ─────────────────────────────
+function p24UpdateLivePnL() {
+  var updated = false;
+  P24_POSITIONS.forEach(function(pos) {
+    var d = SD[pos.sym];
+    if (!d) return;
+    var price = d.price;
+    var isBuy = pos.signal === 'BUY';
+
+    pos.livePrice = price;
+    pos.pnl       = parseFloat(((isBuy ? (price - pos.entry) : (pos.entry - price)) * pos.qty).toFixed(2));
+    pos.pnlPct    = parseFloat(((pos.pnl / pos.invested) * 100).toFixed(2));
+
+    // Auto-exit on target or SL hit
+    if (isBuy) {
+      if (price >= pos.target) { p24ExitPosition(pos.id, price); return; }
+      if (price <= pos.sl)     { p24ExitPosition(pos.id, price); return; }
+    } else {
+      if (price <= pos.target) { p24ExitPosition(pos.id, price); return; }
+      if (price >= pos.sl)     { p24ExitPosition(pos.id, price); return; }
+    }
+    updated = true;
+  });
+  if (updated) { p24Save(); p24RenderDashboard(); }
+}
+
+// ── Render paper trade dashboard ─────────────────────────
+function p24RenderDashboard() {
+  var container = document.getElementById('p24Dashboard');
+  if (!container) return;
+
+  var allTrades   = P24_HISTORY;
+  var wins        = allTrades.filter(function(t) { return t.result === 'WIN'; });
+  var totalPnL    = allTrades.reduce(function(s, t) { return s + (t.pnl || 0); }, 0);
+  var winRate     = allTrades.length ? Math.round(wins.length / allTrades.length * 100) : 0;
+  var livePnL     = P24_POSITIONS.reduce(function(s, p) { return s + (p.pnl || 0); }, 0);
+  var portfolioVal = P24_VIRTUAL_CAPITAL + P24_POSITIONS.reduce(function(s, p) { return s + p.invested; }, 0);
+
+  // Stats dashboard
+  var statsHTML = '<div class="p24-dashboard">'
+    + p24StatCard('Portfolio Value', '₹' + Math.round(portfolioVal).toLocaleString('en-IN'), totalPnL + livePnL >= 0 ? 'green' : 'red')
+    + p24StatCard('Total P&L', (totalPnL >= 0 ? '+' : '') + '₹' + Math.round(totalPnL).toLocaleString('en-IN'), totalPnL >= 0 ? 'green' : 'red')
+    + p24StatCard('Win Rate', winRate + '%', winRate >= 60 ? 'green' : winRate >= 45 ? '' : 'red')
+    + p24StatCard('Trades', allTrades.length + ' closed', '')
+    + '</div>';
+
+  // Active positions
+  var posHTML = '';
+  if (P24_POSITIONS.length) {
+    posHTML = '<div style="margin-bottom:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">Active Positions (' + P24_POSITIONS.length + ')</div>';
+    P24_POSITIONS.forEach(function(pos) {
+      var col = pos.pnl >= 0 ? 'var(--emerald)' : 'var(--sell)';
+      posHTML += '<div class="p24-pos-card">'
+        + '<div><div class="p24-pos-sym">' + pos.sym + '</div>'
+        + '<div class="p24-pos-name">' + pos.name + ' · ' + pos.qty + ' shares · ' + pos.signal + '</div>'
+        + '<div style="font-size:10px;color:var(--muted);">Entry ₹' + pos.entry.toFixed(0) + ' → Live ₹' + (pos.livePrice || pos.entry).toFixed(0) + '</div></div>'
+        + '<div class="p24-pos-pnl">'
+        + '<div class="p24-pos-pnl-val" style="color:' + col + ';">' + (pos.pnl >= 0 ? '+' : '') + '₹' + Math.abs(pos.pnl).toFixed(0) + '</div>'
+        + '<div class="p24-pos-pnl-pct">' + (pos.pnlPct >= 0 ? '+' : '') + pos.pnlPct.toFixed(1) + '%</div></div>'
+        + '<button class="p24-pos-exit" onclick="p24ExitPosition(' + pos.id + ')">Exit</button>'
+        + '</div>';
+    });
+    posHTML += '</div>';
+  }
+
+  // Recent closed trades
+  var histHTML = '';
+  if (allTrades.length) {
+    histHTML = '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">Recent Trades</div>';
+    allTrades.slice(-8).reverse().forEach(function(t) {
+      var col = t.result === 'WIN' ? 'var(--emerald)' : 'var(--sell)';
+      var icon = t.result === 'WIN' ? '✓' : '✗';
+      histHTML += '<div class="p24-pos-card" style="opacity:0.85;">'
+        + '<div style="width:24px;height:24px;border-radius:50%;background:' + (t.result==='WIN'?'rgba(70,201,138,0.12)':'rgba(255,107,107,0.12)') + ';display:flex;align-items:center;justify-content:center;font-size:12px;color:' + col + ';flex-shrink:0;">' + icon + '</div>'
+        + '<div><div class="p24-pos-sym">' + t.sym + '</div>'
+        + '<div class="p24-pos-name">' + t.entryDate + ' → ' + (t.exitDate||'?') + ' · ' + t.qty + ' shares</div></div>'
+        + '<div class="p24-pos-pnl"><div class="p24-pos-pnl-val" style="color:' + col + ';">' + (t.pnl >= 0 ? '+' : '') + '₹' + Math.abs(t.pnl).toFixed(0) + '</div>'
+        + '<div class="p24-pos-pnl-pct">' + (t.pnlPct >= 0 ? '+' : '') + t.pnlPct.toFixed(1) + '%</div></div>'
+        + '</div>';
+    });
+    histHTML += '</div>';
+  }
+
+  // Reset button
+  var resetHTML = '<div style="margin-top:16px;display:flex;gap:8px;">'
+    + '<button onclick="p24ResetPortfolio()" style="background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:11px;cursor:pointer;font-family:\'Sora\',sans-serif;">Reset Portfolio</button>'
+    + '<div style="font-size:11px;color:var(--muted);padding:8px 0;">Starting capital: ₹1,00,000 virtual</div>'
+    + '</div>';
+
+  container.innerHTML = statsHTML + posHTML + histHTML + resetHTML;
+}
+
+function p24StatCard(label, val, cls) {
+  return '<div class="p24-stat"><div class="p24-stat-val ' + cls + '">' + val + '</div><div class="p24-stat-lbl">' + label + '</div></div>';
+}
+
+function p24ResetPortfolio() {
+  if (!confirm('Reset paper trading portfolio? All trades will be cleared.')) return;
+  P24_POSITIONS = [];
+  P24_HISTORY   = [];
+  P24_VIRTUAL_CAPITAL = 100000;
+  p24Save();
+  p24RenderDashboard();
+  toast('Paper trading portfolio reset to ₹1,00,000', 'ok');
+}
+
+// ════════════════════════════════════════════════════════
+//  PHASE 24B — BACKTEST UPGRADE
+// ════════════════════════════════════════════════════════
+
+// Hook into the existing runBacktest function to add monthly breakdown + verdict
+var _p24OrigRunBacktest = typeof runBacktest === 'function' ? runBacktest : null;
+
+if (typeof runBacktest === 'function') {
+  runBacktest = function() {
+    _p24OrigRunBacktest();
+    setTimeout(p24AddBtEnhancements, 500);
+  };
+}
+
+function p24AddBtEnhancements() {
+  if (!BT_ALL_TRADES || !BT_ALL_TRADES.length) return;
+
+  var container = document.getElementById('btResultsWrap');
+  if (!container) return;
+
+  // Remove existing enhancements
+  var existing = document.getElementById('p24BtExtras');
+  if (existing) existing.remove();
+
+  var extras = document.createElement('div');
+  extras.id = 'p24BtExtras';
+
+  // ── Monthly breakdown ──
+  var monthlyMap = {};
+  BT_ALL_TRADES.forEach(function(t) {
+    if (!t.entryDate) return;
+    var parts = t.entryDate.split(' ');
+    var key = parts[1] + ' ' + (parts[2] || '');
+    if (!monthlyMap[key]) monthlyMap[key] = { wins: 0, losses: 0, pnl: 0, trades: 0 };
+    monthlyMap[key].trades++;
+    if (t.result === 'WIN') monthlyMap[key].wins++;
+    else monthlyMap[key].losses++;
+    monthlyMap[key].pnl += (t.returnPct || 0);
+  });
+
+  var months = Object.keys(monthlyMap).slice(-6);
+  var monthlyHTML = '';
+  if (months.length) {
+    monthlyHTML = '<div class="p24-bt-equity"><div class="p24-bt-equity-title">Monthly Performance</div>'
+      + '<div class="p24-bt-monthly">';
+    months.forEach(function(m) {
+      var d = monthlyMap[m];
+      var wr = d.trades ? Math.round(d.wins / d.trades * 100) : 0;
+      var col = wr >= 60 ? 'var(--emerald)' : wr >= 45 ? '#B8922A' : 'var(--sell)';
+      monthlyHTML += '<div class="p24-bt-month">'
+        + '<div class="p24-bt-month-name">' + m + '</div>'
+        + '<div class="p24-bt-month-val" style="color:' + col + ';">' + wr + '%</div>'
+        + '<div style="font-size:9px;color:var(--muted);">' + d.trades + ' trades</div>'
+        + '</div>';
+    });
+    monthlyHTML += '</div></div>';
+  }
+
+  // ── Verdict ──
+  var wins     = BT_ALL_TRADES.filter(function(t) { return t.result === 'WIN'; }).length;
+  var total    = BT_ALL_TRADES.length;
+  var winRate  = total ? Math.round(wins / total * 100) : 0;
+  var avgRet   = total ? (BT_ALL_TRADES.reduce(function(s, t) { return s + (t.returnPct || 0); }, 0) / total).toFixed(1) : 0;
+
+  var verdictClass, verdictTitle, verdictText;
+  if (total < 10) {
+    verdictClass = 'warn';
+    verdictTitle = 'Not enough data yet';
+    verdictText  = 'Run the backtest with a longer time period or more stocks to get a reliable result. You need at least 20 trades for statistical significance.';
+  } else if (winRate >= 65) {
+    verdictClass = '';
+    verdictTitle = '✅ Samridhi performs well on this dataset';
+    verdictText  = 'Win rate of ' + winRate + '% with average return of ' + avgRet + '% per trade. If you had followed these signals, your capital would have grown. Past performance is not a guarantee of future results.';
+  } else if (winRate >= 50) {
+    verdictClass = 'warn';
+    verdictTitle = '⚠ Mixed results — strategy works but needs refinement';
+    verdictText  = 'Win rate of ' + winRate + '% is near baseline. The strategy is profitable but only marginally. Consider using High Confidence filter to improve results.';
+  } else {
+    verdictClass = 'bad';
+    verdictTitle = '❌ Below-target performance on this dataset';
+    verdictText  = 'Win rate of ' + winRate + '% is below the 50% baseline. This could be due to the time period selected or market conditions. Try a different period or strategy mode.';
+  }
+
+  var verdictHTML = '<div class="p24-bt-verdict ' + verdictClass + '">'
+    + '<div class="p24-bt-verdict-title">' + verdictTitle + '</div>'
+    + '<div class="p24-bt-verdict-text">' + verdictText + '</div>'
+    + '</div>';
+
+  extras.innerHTML = monthlyHTML + verdictHTML;
+  container.appendChild(extras);
+}
+
+// ── Inject Paper Trade dashboard into the paper trade page ──
+var _p24OrigPg = pg;
+pg = function(name, el) {
+  _p24OrigPg(name, el);
+  if (name === 'papertrade') {
+    setTimeout(p24InjectDashboard, 200);
+  }
+  if (name === 'backtest') {
+    setTimeout(function() {
+      if (BT_ALL_TRADES && BT_ALL_TRADES.length) p24AddBtEnhancements();
+    }, 300);
+  }
+};
+
+function p24InjectDashboard() {
+  if (document.getElementById('p24Dashboard')) {
+    p24RenderDashboard();
+    return;
+  }
+
+  var ptPage = document.getElementById('page-papertrade');
+  if (!ptPage) return;
+
+  var dashboard = document.createElement('div');
+  dashboard.id = 'p24Dashboard';
+  dashboard.style.marginBottom = '16px';
+
+  // Insert at top of paper trade page
+  var firstChild = ptPage.firstElementChild;
+  if (firstChild) {
+    ptPage.insertBefore(dashboard, firstChild.nextSibling);
+  } else {
+    ptPage.appendChild(dashboard);
+  }
+
+  p24RenderDashboard();
+}
+
+// ── Init ────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    p24Load();
+  }, 800);
+});
+
+// ── Expose globals ────────────────────────────────────────
+window.p24OpenPaperTrade  = p24OpenPaperTrade;
+window.p24ExitPosition    = p24ExitPosition;
+window.p24ResetPortfolio  = p24ResetPortfolio;
+window.p24RenderDashboard = p24RenderDashboard;
+</script>
+<!-- ══ END PHASE 24 ══ -->
+
 </body>
 </html>
