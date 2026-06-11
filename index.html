@@ -11667,34 +11667,7 @@ window.p23CheckAuth        = p23CheckAuth;
   letter-spacing: 0.3px;
 }
 
-/* ── SIDEBAR: Collapse Tools into expandable group ── */
-.sb-tools-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px 5px;
-  font-size: 8.5px;
-  letter-spacing: 2.5px;
-  color: var(--muted);
-  opacity: 0.6;
-  text-transform: uppercase;
-  cursor: pointer;
-  user-select: none;
-}
-.sb-tools-toggle:hover { opacity: 1; }
-.sb-tools-arrow {
-  font-size: 10px;
-  transition: transform 0.2s;
-}
-.sb-tools-arrow.open { transform: rotate(180deg); }
-.sb-tools-items {
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height 0.3s ease;
-}
-.sb-tools-items.open {
-  max-height: 300px;
-}
+
 </style>
 
 <script>
@@ -11702,48 +11675,7 @@ window.p23CheckAuth        = p23CheckAuth;
 window.addEventListener('load', function() {
   setTimeout(function() {
 
-    // 1. Collapse Tools section into expandable group
-    var sidebar = document.querySelector('.sidebar');
-    if (sidebar) {
-      // Find the Tools sb-sec
-      var allSecs = sidebar.querySelectorAll('.sb-sec');
-      allSecs.forEach(function(sec) {
-        if (sec.textContent.trim() === 'Tools') {
-          // Wrap following nav items until next sb-sec or sb-bot
-          var toolsNav = [];
-          var next = sec.nextElementSibling;
-          while (next && !next.classList.contains('sb-sec') && !next.classList.contains('sb-bot') && !next.classList.contains('nav-sep')) {
-            toolsNav.push(next);
-            next = next.nextElementSibling;
-          }
-
-          // Create toggle header
-          var toggle = document.createElement('div');
-          toggle.className = 'sb-tools-toggle';
-          toggle.innerHTML = 'Tools <span class="sb-tools-arrow">▾</span>';
-
-          // Create collapsible wrapper
-          var wrapper = document.createElement('div');
-          wrapper.className = 'sb-tools-items';
-          toolsNav.forEach(function(n) { wrapper.appendChild(n); });
-
-          // Replace sec with toggle + wrapper
-          sec.parentNode.insertBefore(toggle, sec);
-          sec.parentNode.insertBefore(wrapper, sec);
-          sec.remove();
-
-          // Toggle behavior
-          toggle.addEventListener('click', function() {
-            wrapper.classList.toggle('open');
-            toggle.querySelector('.sb-tools-arrow').classList.toggle('open');
-          });
-
-          // Always open by default
-          wrapper.classList.add('open');
-          toggle.querySelector('.sb-tools-arrow').classList.add('open');
-        }
-      });
-    }
+    // Tools section — no collapse, always visible
 
     // 2. Hide Trust Score card when no data (score is "–")
     var trustNum = document.getElementById('trustScoreNum');
@@ -11780,17 +11712,7 @@ window.addEventListener('load', function() {
     // 4. Add subtle hover effect to nav items that open tools
     var toolsWrapper = document.querySelector('.sb-tools-items');
     if (toolsWrapper) {
-      // When a tools page is navigated to, auto-open tools section
-      var origPg = pg;
-      pg = function(name, el) {
-        origPg(name, el);
-        var toolPages = ['papertrade','alerts','journal','analytics','screener','backtest','outcomes'];
-        if (toolPages.indexOf(name) > -1 && toolsWrapper) {
-          toolsWrapper.classList.add('open');
-          var arrow = document.querySelector('.sb-tools-arrow');
-          if (arrow) arrow.classList.add('open');
-        }
-      };
+  
     }
 
   }, 600);
