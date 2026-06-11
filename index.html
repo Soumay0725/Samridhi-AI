@@ -11293,12 +11293,15 @@ function p23UpdateTopbarBadge() {
     badge.style.background = 'rgba(99,91,255,0.1)';
     badge.style.color = '#635BFF';
     badge.style.border = '1px solid rgba(99,91,255,0.25)';
+    badge.style.display = '';
     badge.onclick = null;
   } else {
+    // Always show — regardless of server status
     badge.textContent = '🔌 Connect Upstox';
     badge.style.background = 'rgba(99,91,255,0.08)';
     badge.style.color = '#635BFF';
     badge.style.border = '1px solid rgba(99,91,255,0.2)';
+    badge.style.display = '';
     badge.onclick = p23StartUpstoxLogin;
   }
 }
@@ -11373,6 +11376,9 @@ async function p23SaveManualToken() {
 // ── Init on load ─────────────────────────────────────────
 window.addEventListener('load', function() {
   setTimeout(async function() {
+    // Show badge immediately — don't wait for server
+    p23UpdateTopbarBadge();
+
     // Handle OAuth callback first
     var authDone = await p23HandleAuthCallback();
 
@@ -11380,12 +11386,12 @@ window.addEventListener('load', function() {
       // Check if already authenticated
       var ok = await p23CheckAuth();
       if (!ok) {
-        p23ShowLoginBanner();
+        // Don't show banner — user can click topbar button
       }
     }
 
     p23UpdateTopbarBadge();
-  }, 1000);
+  }, 500);
 });
 
 // Expose globals
