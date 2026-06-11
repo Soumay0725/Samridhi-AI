@@ -11367,18 +11367,18 @@ window.p23CheckAuth        = p23CheckAuth;
   padding: 16px 0;
 }
 .sb-sec {
-  padding: 14px 18px 5px;
+  padding: 10px 16px 4px;
   font-size: 8.5px;
   letter-spacing: 2.5px;
   color: var(--muted);
   opacity: 0.6;
 }
 .nav-i {
-  padding: 9px 18px;
-  font-size: 12.5px;
-  margin: 1px 8px;
-  border-radius: 10px;
-  gap: 9px;
+  padding: 7px 14px;
+  font-size: 12px;
+  margin: 1px 6px;
+  border-radius: 9px;
+  gap: 8px;
   transition: all 0.15s;
 }
 .nav-i .nav-ic {
@@ -11583,10 +11583,11 @@ window.p23CheckAuth        = p23CheckAuth;
 
 /* ── 13. SCROLLBAR — Thinner, more elegant ── */
 .main::-webkit-scrollbar,
-.page::-webkit-scrollbar,
-.sidebar::-webkit-scrollbar { width: 3px; }
+.page::-webkit-scrollbar { width: 3px; }
 .main::-webkit-scrollbar-thumb,
 .page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sidebar::-webkit-scrollbar { display: none; }
+.sidebar { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; }
 
 /* ── 14. DETAIL PANEL — Smoother slide ── */
 .dp-overlay {
