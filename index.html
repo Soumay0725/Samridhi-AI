@@ -11737,12 +11737,9 @@ window.addEventListener('load', function() {
             toggle.querySelector('.sb-tools-arrow').classList.toggle('open');
           });
 
-          // Auto-open if a tools page is active
-          var activeToolsItem = wrapper.querySelector('.nav-i.on');
-          if (activeToolsItem) {
-            wrapper.classList.add('open');
-            toggle.querySelector('.sb-tools-arrow').classList.add('open');
-          }
+          // Always open by default
+          wrapper.classList.add('open');
+          toggle.querySelector('.sb-tools-arrow').classList.add('open');
         }
       });
     }
