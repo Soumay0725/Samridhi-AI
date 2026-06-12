@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════
-//  SAMRIDHI AI — UPSTOX SERVER (Phase 23A)
-//  - Handles Upstox OAuth token exchange
-//  - Fetches live NSE prices (paisa accurate)
-//  - Batch quotes for all 200 stocks
+//  SAMRIDHI AI — UPSTOX SERVER (Phase 23C)
+//  - Fixed /quote and /batch with correct Upstox key format
+//  - Phase 23C: One-tap BUY/SELL order placement
+//  - Auto stop loss placement after order
 //  - CORS enabled for GitHub Pages
 // ════════════════════════════════════════════════════════
 
@@ -22,36 +22,46 @@ const UPSTOX_API_SECRET = process.env.UPSTOX_API_SECRET || 'bnf4eobcdu';
 const REDIRECT_URI      = 'https://soumay0725.github.io/Samridhi-AI/';
 
 // ── Token store ──────────────────────────────────────────
-let accessToken  = null;
-let tokenExpiry  = null;
+let accessToken = null;
+let tokenExpiry = null;
 
 // ── Price cache (15 seconds) ─────────────────────────────
 const priceCache = {};
 const CACHE_TTL  = 15 * 1000;
 
-// ── NSE instrument key map ───────────────────────────────
-// Upstox uses NSE_EQ|SYMBOL format
+// ── Upstox instrument key ────────────────────────────────
+// Upstox v2 uses NSE_EQ|SYMBOL format
 function toUpstoxKey(sym) {
-  return 'NSE_EQ|' + sym;
+  return 'NSE_EQ|' + sym.toUpperCase();
+}
+
+// ── Extract price data from Upstox response ──────────────
+// Upstox returns data keyed by instrument key — handles both formats
+function extractFromUpstoxData(dataMap, sym) {
+  const key1 = 'NSE_EQ|' + sym;
+  const key2 = 'NSE_EQ:' + sym;
+  return dataMap[key1] || dataMap[key2] || null;
 }
 
 // ════════════════════════════════════════════════════════
-//  ROUTES
+//  HEALTH
 // ════════════════════════════════════════════════════════
 
 app.get('/health', (req, res) => {
   res.json({
-    status:    'ok',
-    service:   'Samridhi AI Upstox Server',
-    version:   '23A',
-    hasToken:  !!accessToken,
-    tokenExp:  tokenExpiry ? new Date(tokenExpiry).toISOString() : null,
-    cached:    Object.keys(priceCache).length
+    status:   'ok',
+    service:  'Samridhi AI Upstox Server',
+    version:  '23C',
+    hasToken: !!accessToken,
+    tokenExp: tokenExpiry ? new Date(tokenExpiry).toISOString() : null,
+    cached:   Object.keys(priceCache).length
   });
 });
 
-// ── Step 1: Get Upstox OAuth login URL ──────────────────
-// Frontend opens this URL to let user login to Upstox
+// ════════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════════
+
 app.get('/auth/url', (req, res) => {
   const url = `https://api.upstox.com/v2/login/authorization/dialog`
     + `?client_id=${UPSTOX_API_KEY}`
@@ -61,44 +71,25 @@ app.get('/auth/url', (req, res) => {
   res.json({ url });
 });
 
-// ── Step 2: Exchange auth code for access token ──────────
-// Frontend sends the code it received after login
 app.post('/auth/token', async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: 'code required' });
-
   try {
-    // Upstox requires form-encoded body
-    // Upstox v2 token endpoint uses 'client_id' and 'client_secret'
     const params = new URLSearchParams();
     params.append('code',          code);
     params.append('client_id',     UPSTOX_API_KEY);
     params.append('client_secret', UPSTOX_API_SECRET);
     params.append('redirect_uri',  REDIRECT_URI);
     params.append('grant_type',    'authorization_code');
-
-    console.log('[Auth] Exchanging code with client_id:', UPSTOX_API_KEY);
-
     const resp = await axios.post(
       'https://api.upstox.com/v2/login/authorization/token',
       params.toString(),
-      {
-        headers: {
-          'Content-Type':  'application/x-www-form-urlencoded',
-          'Accept':        'application/json',
-          'Api-Version':   '2.0'
-        }
-      }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Api-Version': '2.0' } }
     );
-
     accessToken = resp.data.access_token;
-    // Upstox tokens expire at midnight IST — set expiry to midnight
-    const now = new Date();
-    const midnight = new Date();
-    midnight.setHours(23, 59, 0, 0);
+    const midnight = new Date(); midnight.setHours(23, 59, 0, 0);
     tokenExpiry = midnight.getTime();
-
-    console.log('[Auth] Token obtained, expires:', new Date(tokenExpiry).toISOString());
+    console.log('[Auth] Token via OAuth, expires:', new Date(tokenExpiry).toISOString());
     res.json({ status: 'ok', expires: tokenExpiry });
   } catch(e) {
     console.error('[Auth] Token exchange failed:', e?.response?.data || e.message);
@@ -106,26 +97,28 @@ app.post('/auth/token', async (req, res) => {
   }
 });
 
-// ── Manual token input (paste from developer console) ───
 app.post('/auth/manual', (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: 'token required' });
-  accessToken = token;
-  const midnight = new Date();
-  midnight.setHours(23, 59, 0, 0);
+  accessToken = token.trim();
+  // Clear stale cache when new token is set
+  Object.keys(priceCache).forEach(k => delete priceCache[k]);
+  const midnight = new Date(); midnight.setHours(23, 59, 0, 0);
   tokenExpiry = midnight.getTime();
-  console.log('[Auth] Manual token set, expires:', new Date(tokenExpiry).toISOString());
+  console.log('[Auth] Manual token set, cache cleared, expires:', new Date(tokenExpiry).toISOString());
   res.json({ status: 'ok', expires: tokenExpiry });
 });
 
-// ── Token status ─────────────────────────────────────────
 app.get('/auth/status', (req, res) => {
   const valid = accessToken && tokenExpiry && Date.now() < tokenExpiry;
   res.json({ authenticated: !!valid, expires: tokenExpiry });
 });
 
-// ── Live quote for single stock ──────────────────────────
-// GET /quote/TCS
+// ════════════════════════════════════════════════════════
+//  LIVE QUOTE — single stock
+//  GET /quote/TCS
+// ════════════════════════════════════════════════════════
+
 app.get('/quote/:sym', async (req, res) => {
   if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
 
@@ -135,51 +128,57 @@ app.get('/quote/:sym', async (req, res) => {
 
   try {
     const key  = toUpstoxKey(sym);
-    const resp = await axios.get(`https://api.upstox.com/v2/market-quote/ltp`, {
+    const resp = await axios.get('https://api.upstox.com/v2/market-quote/ltp', {
       params:  { instrument_key: key },
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
       timeout: 8000
     });
 
-    const d    = resp.data?.data?.[key] || resp.data?.data?.[`NSE_EQ:${sym}`];
-    if (!d)    return res.status(404).json({ error: 'No data for ' + sym });
+    const dataMap = resp.data?.data || {};
+    const d = extractFromUpstoxData(dataMap, sym);
+
+    if (!d || !d.last_price) {
+      console.error(`[Quote] No data for ${sym}. Keys in response:`, Object.keys(dataMap));
+      return res.status(404).json({ error: 'No data for ' + sym, keys: Object.keys(dataMap) });
+    }
 
     const data = {
       sym,
-      price:     d.last_price,
+      price:     parseFloat(d.last_price.toFixed(2)),
       open:      d.ohlc?.open  || d.last_price,
       high:      d.ohlc?.high  || d.last_price,
       low:       d.ohlc?.low   || d.last_price,
-      close:     d.ohlc?.close || d.last_price,
       prevClose: d.ohlc?.close || d.last_price,
       chg:       d.ohlc?.close ? parseFloat(((d.last_price - d.ohlc.close) / d.ohlc.close * 100).toFixed(2)) : 0,
       volume:    d.volume || 0,
       isLive:    true,
-      source:    'upstox'
+      source:    'upstox',
+      ts:        Date.now()
     };
 
     priceCache[sym] = { data, ts: Date.now() };
     res.json(data);
   } catch(e) {
     console.error(`[Quote] ${sym} failed:`, e?.response?.data || e.message);
-    res.status(500).json({ error: 'Quote failed for ' + sym });
+    res.status(500).json({ error: 'Quote failed for ' + sym, details: e?.response?.data });
   }
 });
 
-// ── Batch live quotes for all 200 stocks ─────────────────
-// GET /batch?syms=RELIANCE,TCS,INFY,...
+// ════════════════════════════════════════════════════════
+//  BATCH QUOTES — up to 200 stocks
+//  GET /batch?syms=RELIANCE,TCS,INFY,...
+// ════════════════════════════════════════════════════════
+
 app.get('/batch', async (req, res) => {
   if (!accessToken) return res.status(401).json({ error: 'Not authenticated', needsAuth: true });
 
-  const raw  = (req.query.syms || '').trim();
-  if (!raw)  return res.status(400).json({ error: 'syms required' });
+  const raw = (req.query.syms || '').trim();
+  if (!raw) return res.status(400).json({ error: 'syms required' });
 
-  const syms = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 200);
-
-  // Check cache first
-  const results   = {};
-  const toFetch   = [];
-  const now       = Date.now();
+  const syms    = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 200);
+  const results = {};
+  const toFetch = [];
+  const now     = Date.now();
 
   syms.forEach(sym => {
     const cached = priceCache[sym];
@@ -191,23 +190,19 @@ app.get('/batch', async (req, res) => {
   });
 
   if (toFetch.length > 0) {
-    // Upstox supports up to 500 instrument keys per request
     const chunkSize = 100;
     for (let i = 0; i < toFetch.length; i += chunkSize) {
       const chunk = toFetch.slice(i, i + chunkSize);
       const keys  = chunk.map(toUpstoxKey).join(',');
-
       try {
         const resp = await axios.get('https://api.upstox.com/v2/market-quote/ltp', {
           params:  { instrument_key: keys },
-          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
           timeout: 15000
         });
-
         const dataMap = resp.data?.data || {};
         chunk.forEach(sym => {
-          const key = toUpstoxKey(sym);
-          const d   = dataMap[key] || dataMap[`NSE_EQ:${sym}`];
+          const d = extractFromUpstoxData(dataMap, sym);
           if (d && d.last_price) {
             const data = {
               sym,
@@ -219,14 +214,15 @@ app.get('/batch', async (req, res) => {
               chg:       d.ohlc?.close ? parseFloat(((d.last_price - d.ohlc.close) / d.ohlc.close * 100).toFixed(2)) : 0,
               volume:    d.volume || 0,
               isLive:    true,
-              source:    'upstox'
+              source:    'upstox',
+              ts:        now
             };
-            results[sym]        = data;
-            priceCache[sym]     = { data, ts: now };
+            results[sym]    = data;
+            priceCache[sym] = { data, ts: now };
           }
         });
       } catch(e) {
-        console.error(`[Batch] Chunk ${i}-${i+chunkSize} failed:`, e?.response?.data || e.message);
+        console.error(`[Batch] Chunk failed:`, e?.response?.data || e.message);
       }
     }
   }
@@ -236,73 +232,213 @@ app.get('/batch', async (req, res) => {
   res.json({ results, meta: { requested: syms.length, fetched, ts: now } });
 });
 
-// ── Historical data (Yahoo proxy — for indicators only) ──
-// Historical OHLCV for RSI/MACD/SMA computation
-// Upstox historical needs different endpoint — use Yahoo for history, Upstox for live price
+// ════════════════════════════════════════════════════════
+//  HISTORICAL DATA — Yahoo proxy for RSI/MACD/SMA
+//  GET /history/TCS
+// ════════════════════════════════════════════════════════
+
 app.get('/history/:sym', async (req, res) => {
   const sym  = req.params.sym.toUpperCase();
   const ySym = sym + '.NS';
-
   try {
     const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?range=1y&interval=1d`;
     const resp = await axios.get(url, {
       timeout: 12000,
       headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
     });
-
     const result = resp.data?.chart?.result?.[0];
     if (!result) return res.status(404).json({ error: 'No history for ' + sym });
-
     const quotes  = result.indicators?.quote?.[0] || {};
     const closes  = (quotes.close  || []).filter(v => v != null);
     const highs   = (quotes.high   || []).filter(v => v != null);
     const lows    = (quotes.low    || []).filter(v => v != null);
     const volumes = (quotes.volume || []).filter(v => v != null);
-
     res.json({ sym, closes, highs, lows, volumes, ts: Date.now() });
   } catch(e) {
     res.status(500).json({ error: 'History failed for ' + sym });
   }
 });
 
-// ── Full stock data (history + live price merged) ────────
-// GET /stock/TCS — combines Yahoo history with Upstox live price
-app.get('/stock/:sym', async (req, res) => {
-  const sym = req.params.sym.toUpperCase();
+// ════════════════════════════════════════════════════════
+//  PHASE 23C — ONE-TAP ORDER PLACEMENT
+//  POST /order/place
+//  Body: { sym, qty, orderType, price, stopLoss, tag }
+// ════════════════════════════════════════════════════════
+
+app.post('/order/place', async (req, res) => {
+  if (!accessToken) return res.status(401).json({ error: 'Not authenticated', needsAuth: true });
+
+  const { sym, qty, orderType, price, stopLoss, tag } = req.body;
+
+  if (!sym || !qty || !orderType) {
+    return res.status(400).json({ error: 'sym, qty, orderType required' });
+  }
+
+  const symbol    = sym.toUpperCase();
+  const quantity  = parseInt(qty);
+  const instrKey  = toUpstoxKey(symbol);
+
+  // ── Determine transaction type ───────────────────────
+  // orderType: 'BUY' or 'SELL'
+  const txnType = orderType.toUpperCase() === 'SELL' ? 'SELL' : 'BUY';
+
+  // ── Build main order payload ─────────────────────────
+  // Upstox v2 order placement
+  const orderPayload = {
+    quantity:        quantity,
+    product:         'D',           // D = Delivery (CNC), I = Intraday (MIS)
+    validity:        'DAY',
+    price:           0,             // 0 for MARKET order
+    tag:             tag || 'SAMRIDHI',
+    instrument_token: instrKey,
+    order_type:      'MARKET',      // MARKET order for instant execution
+    transaction_type: txnType,
+    disclosed_quantity: 0,
+    trigger_price:   0,
+    is_amo:          false
+  };
+
+  console.log(`[Order] Placing ${txnType} ${quantity} ${symbol} @ MARKET`);
 
   try {
-    // Fetch history and live price in parallel
-    const histPromise  = axios.get(`http://localhost:${PORT}/history/${sym}`, { timeout: 15000 }).catch(() => null);
-    const livePromise  = accessToken
-      ? axios.get(`http://localhost:${PORT}/quote/${sym}`, { timeout: 8000 }).catch(() => null)
-      : Promise.resolve(null);
+    const orderResp = await axios.post(
+      'https://api.upstox.com/v2/order/place',
+      orderPayload,
+      {
+        headers: {
+          Authorization:  `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept:         'application/json',
+          'Api-Version':  '2.0'
+        },
+        timeout: 10000
+      }
+    );
 
-    const [histResp, liveResp] = await Promise.all([histPromise, livePromise]);
+    const orderId = orderResp.data?.data?.order_id;
+    console.log(`[Order] ✅ Main order placed: ${orderId}`);
 
-    const hist = histResp?.data;
-    const live = liveResp?.data;
+    // ── Place stop loss order if provided ────────────────
+    let slOrderId = null;
+    if (stopLoss && txnType === 'BUY') {
+      const slPayload = {
+        quantity:          quantity,
+        product:           'D',
+        validity:          'DAY',
+        price:             parseFloat(stopLoss),
+        tag:               'SAMRIDHI_SL',
+        instrument_token:  instrKey,
+        order_type:        'SL-M',       // Stop Loss Market
+        transaction_type:  'SELL',       // Exit the buy position
+        disclosed_quantity: 0,
+        trigger_price:     parseFloat(stopLoss),
+        is_amo:            false
+      };
 
-    if (!hist && !live) return res.status(404).json({ error: 'No data for ' + sym });
+      try {
+        const slResp = await axios.post(
+          'https://api.upstox.com/v2/order/place',
+          slPayload,
+          {
+            headers: {
+              Authorization:  `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              Accept:         'application/json',
+              'Api-Version':  '2.0'
+            },
+            timeout: 10000
+          }
+        );
+        slOrderId = slResp.data?.data?.order_id;
+        console.log(`[Order] ✅ SL order placed: ${slOrderId} @ ₹${stopLoss}`);
+      } catch(slErr) {
+        console.error('[Order] SL placement failed:', slErr?.response?.data || slErr.message);
+        // Don't fail the whole request — main order succeeded
+      }
+    }
 
     res.json({
-      sym,
-      price:     live?.price     || hist?.closes?.[hist.closes.length - 1] || 0,
-      prevClose: live?.prevClose || 0,
-      chg:       live?.chg       || 0,
-      volume:    live?.volume    || 0,
-      closes:    hist?.closes    || [],
-      highs:     hist?.highs     || [],
-      lows:      hist?.lows      || [],
-      volumes:   hist?.volumes   || [],
-      isLive:    !!live,
-      source:    live ? 'upstox' : 'yahoo'
+      status:    'ok',
+      orderId,
+      slOrderId,
+      sym:       symbol,
+      qty:       quantity,
+      txnType,
+      orderType: 'MARKET',
+      slPrice:   stopLoss || null,
+      ts:        Date.now()
     });
+
   } catch(e) {
-    res.status(500).json({ error: 'Stock fetch failed for ' + sym });
+    console.error('[Order] Failed:', e?.response?.data || e.message);
+    const errData = e?.response?.data;
+    res.status(500).json({
+      error:   'Order placement failed',
+      details: errData,
+      // Common Upstox error codes
+      hint: errData?.errors?.[0]?.message || errData?.message || e.message
+    });
   }
 });
 
+// ── Get order status ─────────────────────────────────────
+// GET /order/status/:orderId
+app.get('/order/status/:orderId', async (req, res) => {
+  if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const resp = await axios.get(
+      `https://api.upstox.com/v2/order/details?order_id=${req.params.orderId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+        timeout: 8000
+      }
+    );
+    res.json(resp.data?.data || {});
+  } catch(e) {
+    res.status(500).json({ error: 'Status fetch failed', details: e?.response?.data });
+  }
+});
+
+// ── Get open positions ───────────────────────────────────
+// GET /positions
+app.get('/positions', async (req, res) => {
+  if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const resp = await axios.get('https://api.upstox.com/v2/portfolio/short-term-positions', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+      timeout: 8000
+    });
+    res.json(resp.data?.data || []);
+  } catch(e) {
+    res.status(500).json({ error: 'Positions fetch failed' });
+  }
+});
+
+// ── Get funds/margin ─────────────────────────────────────
+// GET /funds
+app.get('/funds', async (req, res) => {
+  if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const resp = await axios.get('https://api.upstox.com/v2/user/get-funds-and-margin?segment=SEC', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+      timeout: 8000
+    });
+    const d = resp.data?.data;
+    res.json({
+      available: d?.equity?.available_margin || 0,
+      used:      d?.equity?.used_margin      || 0,
+      total:     d?.equity?.net_margin       || 0
+    });
+  } catch(e) {
+    res.status(500).json({ error: 'Funds fetch failed' });
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  START
+// ════════════════════════════════════════════════════════
+
 app.listen(PORT, () => {
-  console.log(`Samridhi AI Upstox Server v23A running on port ${PORT}`);
-  console.log(`Auth required: GET /auth/url to start login`);
+  console.log(`Samridhi AI Server v23C running on port ${PORT}`);
+  console.log(`Endpoints: /health /auth/* /quote/:sym /batch /history/:sym /order/place /positions /funds`);
 });
