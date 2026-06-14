@@ -144,7 +144,7 @@ app.get('/health', (req, res) => {
   res.json({
     status:   'ok',
     service:  'Samridhi AI Upstox Server',
-    version:  '24',
+    version:  '24.1',
     hasToken: !!accessToken,
     tokenExp: tokenExpiry ? new Date(tokenExpiry).toISOString() : null,
     cached:   Object.keys(priceCache).length,
@@ -231,18 +231,60 @@ app.get('/auth/status', (req, res) => {
   res.json({ authenticated: !!valid, expires: tokenExpiry });
 });
 
+// ── Real Upstox health probe ─────────────────────────────
+//  Actually tries to fetch a quote (RELIANCE) so the frontend
+//  can reliably tell if Upstox is truly working right now.
+//  Used by the scan to decide: Upstox-live vs Yahoo-backup.
+app.get('/upstox/health', async (req, res) => {
+  if (!accessToken) return res.json({ ok: false, reason: 'no_token' });
+  try {
+    const key = await resolveSymbol('RELIANCE');
+    if (!key) return res.json({ ok: false, reason: 'resolve_failed' });
+    const resp = await axios.get('https://api.upstox.com/v2/market-quote/quotes', {
+      params:  { instrument_key: key },
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+      timeout: 7000
+    });
+    const d = extractFromUpstoxData(resp.data?.data || {}, 'RELIANCE');
+    if (d && d.last_price) return res.json({ ok: true, sample: { RELIANCE: d.last_price } });
+    return res.json({ ok: false, reason: 'no_data' });
+  } catch (e) {
+    return res.json({ ok: false, reason: 'api_error', detail: e?.response?.status || e.message });
+  }
+});
+
+// ── Is NSE open right now? (IST, Mon-Fri, 9:15-15:30) ────
+// Note: does not account for trading holidays (can add later).
+function isMarketOpen() {
+  const now = new Date();
+  // Convert to IST
+  const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const day = ist.getDay();              // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const mins = ist.getHours() * 60 + ist.getMinutes();
+  return mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30);
+}
+
 // ── Build a price object from an Upstox quote entry ──────
+//  Market OPEN  -> show live last_price
+//  Market SHUT  -> show official close (matches Groww/Google)
 function buildPrice(sym, d, ts) {
+  const open = isMarketOpen();
+  const ltp = d.last_price;
+  const close = d.ohlc?.close;
+  // When shut, prefer the official close; fall back to ltp if missing
+  const shown = (!open && close) ? close : ltp;
   return {
     sym,
-    price:     parseFloat(d.last_price.toFixed(2)),
-    open:      d.ohlc?.open  || d.last_price,
-    high:      d.ohlc?.high  || d.last_price,
-    low:       d.ohlc?.low   || d.last_price,
-    prevClose: d.ohlc?.close || d.last_price,
-    chg:       d.ohlc?.close ? parseFloat(((d.last_price - d.ohlc.close) / d.ohlc.close * 100).toFixed(2)) : 0,
+    price:     parseFloat(Number(shown).toFixed(2)),
+    open:      d.ohlc?.open  || ltp,
+    high:      d.ohlc?.high  || ltp,
+    low:       d.ohlc?.low   || ltp,
+    prevClose: close || ltp,
+    chg:       close ? parseFloat(((shown - close) / close * 100).toFixed(2)) : 0,
     volume:    d.volume || 0,
-    isLive:    true,
+    isLive:    open,
+    marketOpen: open,
     source:    'upstox',
     ts:        ts || Date.now()
   };
@@ -266,7 +308,7 @@ app.get('/quote/:sym', async (req, res) => {
   }
 
   try {
-    const resp = await axios.get('https://api.upstox.com/v2/market-quote/ltp', {
+    const resp = await axios.get('https://api.upstox.com/v2/market-quote/quotes', {
       params:  { instrument_key: key },
       headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
       timeout: 8000
@@ -322,7 +364,7 @@ app.get('/batch', async (req, res) => {
       const chunk = toFetch.slice(i, i + chunkSize);
       const keys  = chunk.map(toUpstoxKey).join(',');
       try {
-        const resp = await axios.get('https://api.upstox.com/v2/market-quote/ltp', {
+        const resp = await axios.get('https://api.upstox.com/v2/market-quote/quotes', {
           params:  { instrument_key: keys },
           headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
           timeout: 15000
@@ -348,28 +390,85 @@ app.get('/batch', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════
-//  HISTORICAL DATA   GET /history/TCS   (Yahoo fallback)
+//  HISTORICAL DATA   GET /history/TCS
+//  Primary: Upstox daily candles (last 1 year)
+//  Fallback: Yahoo Finance (only if Upstox fails)
+//  Response shape is identical either way so the frontend
+//  indicators (RSI/MACD/SMA) need no changes. A `source`
+//  field tells the app which was used.
 // ════════════════════════════════════════════════════════
 
-app.get('/history/:sym', async (req, res) => {
-  const sym  = req.params.sym.toUpperCase();
+function ymd(d) { return d.toISOString().slice(0, 10); }   // YYYY-MM-DD
+
+async function historyFromUpstox(sym) {
+  const key = await resolveSymbol(sym);
+  if (!key) return null;
+
+  const to   = new Date();
+  const from = new Date(); from.setFullYear(from.getFullYear() - 1);
+  // V3: /historical-candle/{key}/days/1/{to}/{from}
+  const url = `https://api.upstox.com/v3/historical-candle/${encodeURIComponent(key)}/days/1/${ymd(to)}/${ymd(from)}`;
+
+  const resp = await axios.get(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+    timeout: 12000
+  });
+
+  const candles = resp.data?.data?.candles || [];
+  if (!candles.length) return null;
+
+  // Upstox returns newest-first: [ts, open, high, low, close, volume, oi]
+  // Reverse to oldest-first (what indicators expect).
+  const ordered = candles.slice().reverse();
+  const opens   = ordered.map(c => c[1]);
+  const highs   = ordered.map(c => c[2]);
+  const lows    = ordered.map(c => c[3]);
+  const closes  = ordered.map(c => c[4]);
+  const volumes = ordered.map(c => c[5]);
+
+  return { sym, opens, closes, highs, lows, volumes, source: 'upstox', ts: Date.now() };
+}
+
+async function historyFromYahoo(sym) {
   const ySym = sym + '.NS';
+  const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?range=1y&interval=1d`;
+  const resp = await axios.get(url, {
+    timeout: 12000,
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
+  });
+  const result = resp.data?.chart?.result?.[0];
+  if (!result) return null;
+  const quotes  = result.indicators?.quote?.[0] || {};
+  const closes  = (quotes.close  || []).filter(v => v != null);
+  const highs   = (quotes.high   || []).filter(v => v != null);
+  const lows    = (quotes.low    || []).filter(v => v != null);
+  const opens   = (quotes.open   || []).filter(v => v != null);
+  const volumes = (quotes.volume || []).filter(v => v != null);
+  if (!closes.length) return null;
+  return { sym, opens, closes, highs, lows, volumes, source: 'yahoo', ts: Date.now() };
+}
+
+app.get('/history/:sym', async (req, res) => {
+  const sym = req.params.sym.toUpperCase();
+
+  // Try Upstox first (only if authenticated)
+  if (accessToken) {
+    try {
+      const up = await historyFromUpstox(sym);
+      if (up && up.closes.length) return res.json(up);
+      console.warn(`[History] Upstox empty for ${sym}, trying Yahoo`);
+    } catch (e) {
+      console.warn(`[History] Upstox failed for ${sym}: ${e?.response?.status || e.message}, trying Yahoo`);
+    }
+  }
+
+  // Fallback: Yahoo
   try {
-    const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${ySym}?range=1y&interval=1d`;
-    const resp = await axios.get(url, {
-      timeout: 12000,
-      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
-    });
-    const result = resp.data?.chart?.result?.[0];
-    if (!result) return res.status(404).json({ error: 'No history for ' + sym });
-    const quotes  = result.indicators?.quote?.[0] || {};
-    const closes  = (quotes.close  || []).filter(v => v != null);
-    const highs   = (quotes.high   || []).filter(v => v != null);
-    const lows    = (quotes.low    || []).filter(v => v != null);
-    const volumes = (quotes.volume || []).filter(v => v != null);
-    res.json({ sym, closes, highs, lows, volumes, ts: Date.now() });
-  } catch(e) {
-    res.status(500).json({ error: 'History failed for ' + sym });
+    const y = await historyFromYahoo(sym);
+    if (y) return res.json(y);
+    return res.status(404).json({ error: 'No history for ' + sym });
+  } catch (e) {
+    return res.status(500).json({ error: 'History failed for ' + sym });
   }
 });
 
