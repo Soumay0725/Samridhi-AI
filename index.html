@@ -766,7 +766,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <label class="s-lbl">Your name</label>
     <input class="s-inp" id="uname" type="text" placeholder="e.g. Soumay" maxlength="20">
     <label class="s-lbl">Groq API Key</label>
-    <input class="s-inp" id="groqKey" type="text" placeholder="gsk_..." autocomplete="off">
+    <input class="s-inp" id="groqKey" type="text" placeholder="AIza..." autocomplete="off">
 
     <button class="s-btn" id="launchBtn">✦ Launch Samridhi AI</button>
     <div class="s-note">Credentials stored only in your browser</div>
@@ -2011,7 +2011,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
-        <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Groq API Key</div></div><input class="s-inp2" id="sGroq"></div>
+        <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Groq API Key</div><div style="font-size:10px;color:var(--muted);">For AI analysis text (free at groq.com)</div></div><input class="s-inp2" id="sGroq"></div>
         <button class="save-btn" onclick="saveS()">Save Settings</button>
       </div>
 
@@ -2844,8 +2844,10 @@ async function groq(prompt){
   return d.choices[0].message.content;
 }
 
+// ── Groq API ──────────────────────────────────────────────
 // HYBRID RULE ENGINE - Samridhi AI v2.0
-// Mathematical 10-point scoring. Groq only for explanation text.
+// Mathematical 10-point scoring. Groq used for explanation text (batched, rate-limit safe).
+
 
 function calcScore(dat) {
   var scores = {};
@@ -3000,7 +3002,7 @@ function dMood(bc,sc,fi) {
 
 
 async function runScan(){
-  if(!GK){toast('Scanning with rule engine (no Groq key — explanations will use fallback text)','ok');}
+  if(!GK){toast('Scanning with rule engine — add Groq key in Settings for AI explanations','ok');}
   SD={};SG={};PK=[];
   document.getElementById('loading').style.display='flex';
   var lc=document.getElementById('lchips');lc.innerHTML='';
@@ -3101,14 +3103,40 @@ async function runScan(){
     toast('Upstox unavailable — showing Yahoo backup prices. Signals paused for safety.','err');
     return;
   }
+  // STEP 3a: Generate signals from MATH (instant, no AI, never rate-limited)
   for(var j=0;j<ST.length;j++){
     var s=ST[j];
     if(!SD[s])continue;
-    setP(46+Math.round((j/ST.length)*50),'Analysing '+( NM[s]||s)+'...','');
-    var sig=await getSig(s,SD[s]);
+    setP(46+Math.round((j/ST.length)*30),'Analysing '+( NM[s]||s)+'...','');
+    var sig=fb(s,SD[s]);          // pure math signal
     SG[s]=sig;
     if(sig.signal!=='HOLD')PK.push({sym:s,signal:sig,data:SD[s]});
-    await sl(80);
+  }
+
+  // STEP 3b: Per-stock AI explanations via Groq — batched 5 at a time, 2s delay.
+  // Safe within Groq free tier (30 req/min). Falls back to math text if no key.
+  if(GK && GK.length>10){
+    var groqSyms=Object.keys(SG).filter(function(s){return SD[s];});
+    var GROQ_BATCH=5;
+    for(var gi=0; gi<groqSyms.length; gi+=GROQ_BATCH){
+      var gChunk=groqSyms.slice(gi,gi+GROQ_BATCH);
+      setP(76+Math.round((gi/groqSyms.length)*22),'Writing analysis ('+Math.min(gi+GROQ_BATCH,groqSyms.length)+'/'+groqSyms.length+')...','Groq');
+      for(var gj=0;gj<gChunk.length;gj++){
+        var gs=gChunk[gj];
+        try{
+          var gd=SD[gs], gsg=SG[gs];
+          var gep='NSE analyst. 1-2 sentences why '+(NM[gs]||gs)+' ('+gs+') is a '+gsg.signal+'. RSI='+gd.rsi.toFixed(1)+', MACD='+(gd.macd&&gd.macd.bull?'Bull':'Bear')+', vs50DMA='+(gd.price>gd.sma50?'above':'below')+', score='+gsg.confidence+'%. Max 28 words, plain text.';
+          var greason=await groq(gep);
+          greason=greason.replace(/[^ -~]/g,'').replace(/[*#]/g,'').trim().slice(0,180);
+          if(greason && greason.length>4){
+            SG[gs].reason=greason;
+            var gpk=PK.find(function(p){return p.sym===gs;});
+            if(gpk)gpk.signal.reason=greason;
+          }
+        }catch(e){ /* keep math fallback */ }
+      }
+      if(gi+GROQ_BATCH < groqSyms.length) await sl(2000);
+    }
   }
 
   PK=applyStratMode(PK);
@@ -3274,13 +3302,12 @@ function rTags(){var el=document.getElementById('sTags');if(!el)return;el.innerH
 function saveS(){var n=document.getElementById('sName').value.trim(),gk=document.getElementById('sGroq').value.trim();if(n){UN=n;document.getElementById('gName').textContent=n;document.getElementById('avL').textContent=n[0].toUpperCase();sv('s_n',n);}if(gk){GK=gk;sv('s_g',btoa(gk));}toast('Settings saved!','ok');}
 
 function launch(n,gk){
-  UN=n;GK=gk;
+  UN=n;
   document.getElementById('setup').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('gName').textContent=n;
   document.getElementById('avL').textContent=(n||'S')[0].toUpperCase();
   document.getElementById('sName').value=n;
-  document.getElementById('sGroq').value=gk;
   rTags();rWLShell();
   populatePtSym();drawL(0);drawFG(50);
   toast('Welcome '+n+'! Click Scan Markets.','ok');
@@ -3290,12 +3317,12 @@ document.getElementById('launchBtn').addEventListener('click',function(){
   var n=document.getElementById('uname').value.trim()||'Friend';
   var gk=document.getElementById('groqKey').value.trim();
   if(!gk||gk.length<10){
-    alert('Please enter your Groq API key (starts with gsk_)');
+    alert('Please enter your Groq API key in Settings');
     document.getElementById('groqKey').focus();
     return;
   }
   sv('s_n',n);
-  try{sv('s_g',btoa(gk));}catch(e){}
+  try{sv('s_gem',btoa(gk));}catch(e){}
   launch(n,gk);
 });
 
@@ -3671,11 +3698,18 @@ window.addEventListener('load',function(){
   renderSigTable();
   var n=ld('s_n');
   var gkenc=ld('s_g');
+  var gmenc=ld('s_gem');
   if(n)document.getElementById('uname').value=n;
   if(gkenc){
     try{
       var gk=atob(gkenc);
-      if(gk&&gk.length>10)document.getElementById('groqKey').value=gk;
+      if(gk&&gk.length>10){GK=gk;document.getElementById('groqKey').value=gk;var sg=document.getElementById('sGroq');if(sg)sg.value=gk;}
+    }catch(e){}
+  }
+  if(gmenc){
+    try{
+      var gmk=atob(gmenc);
+
     }catch(e){}
   }
 });
@@ -5351,7 +5385,7 @@ function appendAIThinking(){
 }
 
 async function sendAIChat(){
-  if(!GK){ appendAIMsg('assistant','Please enter your Groq API key in Settings first to use the AI chat.'); return; }
+  if(!GK || GK.length<10){ appendAIMsg('assistant','Please enter your Groq API key in Settings to use the AI chat.'); return; }
   var input=document.getElementById('aiChatInput');
   var q=input.value.trim(); if(!q) return;
   input.value='';
@@ -5364,17 +5398,17 @@ async function sendAIChat(){
   if(Object.keys(SD).length){ ctx+='Watchlist has '+ST.length+' stocks. '; }
   ctx+='Answer concisely in 2-3 sentences. Be helpful, educational, and use Indian market context (NSE/BSE, Rs., Indian sectors). If asked about a specific stock signal, refer to the data provided.';
   try{
-    var msgs=[{role:'system',content:ctx}].concat(AIC_HISTORY.slice(-8));
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GK},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:250,temperature:0.5})});
-    var d=await r.json();
+    // Build a single prompt from system context + recent history
+    var hist=AIC_HISTORY.slice(-8).map(function(m){ return (m.role==='user'?'User: ':'Assistant: ')+m.content; }).join('\n');
+    var fullPrompt=ctx+'\n\nConversation so far:\n'+hist+'\nAssistant:';
+    var reply=await groq(fullPrompt);
     var thinking=document.getElementById('aiThinking'); if(thinking) thinking.remove();
-    if(d.error){ appendAIMsg('assistant','Sorry, I got an error: '+d.error.message); return; }
-    var reply=d.choices[0].message.content;
+    if(!reply){ appendAIMsg('assistant','Sorry, I did not get a response. Please try again.'); return; }
     AIC_HISTORY.push({role:'assistant',content:reply});
     appendAIMsg('assistant',reply);
   }catch(e){
     var thinking2=document.getElementById('aiThinking'); if(thinking2) thinking2.remove();
-    appendAIMsg('assistant','Sorry, I could not connect to the AI. Please check your Groq API key.');
+    appendAIMsg('assistant','Sorry, I could not connect to Groq. Please check your API key in Settings.');
   }
 }
 
@@ -9919,7 +9953,8 @@ async function p21FetchFundamentals(sym) {
   if (cached && cached._ts && (Date.now() - cached._ts) < 6 * 3600 * 1000) return cached;
 
   var data = await p21FetchFundYahoo(sym);
-  if (!data) data = await p21FetchFundGroq(sym);
+  // NOTE: Groq fundamentals-guessing removed — never show AI-estimated financials.
+  // If real data unavailable, fundamentals simply show as unavailable.
   if (!data) {
     // Minimal placeholder so we don't keep retrying
     data = { sym:sym, pe:null, eps:null, promoter:null, fii:null, dii:null, earningsDays:-1, source:'none' };
