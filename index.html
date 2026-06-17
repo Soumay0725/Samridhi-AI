@@ -765,8 +765,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     </div>
     <label class="s-lbl">Your name</label>
     <input class="s-inp" id="uname" type="text" placeholder="e.g. Soumay" maxlength="20">
-    <label class="s-lbl">Groq API Key</label>
-    <input class="s-inp" id="groqKey" type="text" placeholder="AIza..." autocomplete="off">
+    <input class="s-inp" id="groqKey" type="hidden" value="" autocomplete="off">
 
     <button class="s-btn" id="launchBtn">✦ Launch Samridhi AI</button>
     <div class="s-note">Credentials stored only in your browser</div>
@@ -2011,7 +2010,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
-        <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Groq API Key</div><div style="font-size:10px;color:var(--muted);">For AI analysis text (free at groq.com)</div></div><input class="s-inp2" id="sGroq"></div>
+        <input type="hidden" id="sGroq" value="">
         <button class="save-btn" onclick="saveS()">Save Settings</button>
       </div>
 
@@ -3035,15 +3034,7 @@ function calcScore(dat) {
 
 async function getSig(sym, dat) {
   var scored = calcScore(dat);
-  var reason = '';
-  if (GK && GK.length > 10) {
-    try {
-      var ep = 'Samridhi AI NSE analyst. Write 1-2 sentences why ' + (NM[sym]||sym) + ' (' + sym + ', ' + (SEC[sym]||'') + ') is a ' + scored.signal + '. RSI=' + dat.rsi.toFixed(1) + ', MACD=' + (dat.macd.bull?'Bull':'Bear') + ', vs50DMA=' + (dat.price>dat.sma50?'above':'below') + ', score=' + scored.confidence + '%. Plain text only, max 30 words.';
-      reason = await groq(ep);
-      reason = reason.replace(/[^\x20-\x7E]/g, '').replace(/[*#]/g, '').trim().slice(0, 160);
-    } catch(e) { reason = ''; }
-  }
-  if (!reason) reason = fallbackReason(scored.signal, dat);
+  var reason = fallbackReason(scored.signal, dat);
   return { signal: scored.signal, confidence: scored.confidence, entry: scored.entry, target: scored.target, stopLoss: scored.stopLoss, horizon: scored.horizon, reason: reason, rr: scored.rr, scoreBreakdown: scored.scores };
 }
 
@@ -3053,17 +3044,40 @@ function fb(sym, dat) {
 }
 
 function fallbackReason(signal, dat) {
-  var rsi = dat.rsi || 50;
-  if (signal === 'BUY') {
-    if (rsi < 40) return 'RSI oversold (' + rsi.toFixed(0) + ') with price near support.';
-    if (dat.macd && dat.macd.bull) return 'MACD bullish crossover above 50 DMA signals upward momentum.';
-    return 'Multiple technical indicators align positively.';
-  }
-  if (signal === 'SELL') {
-    if (rsi > 65) return 'RSI overbought (' + rsi.toFixed(0) + ') -- price extended, reversal risk.';
-    return 'Bearish setup with price below key moving averages.';
-  }
-  return 'Indicators mixed -- no clear directional setup yet.';
+  var rsi = (dat.rsi != null) ? dat.rsi : 50;
+  var macdBull = dat.macd && dat.macd.bull;
+  var price = dat.price || 0;
+  var sma50 = dat.sma50 || price;
+  var sma200 = dat.sma200 || price;
+  var vol = dat.volR || 1;
+  var above50 = price > sma50;
+  var above200 = price > sma200;
+  var parts = [];
+
+  // RSI commentary
+  if (rsi < 30) parts.push('RSI deeply oversold at ' + rsi.toFixed(0));
+  else if (rsi < 40) parts.push('RSI oversold at ' + rsi.toFixed(0));
+  else if (rsi > 70) parts.push('RSI overbought at ' + rsi.toFixed(0));
+  else if (rsi > 60) parts.push('RSI elevated at ' + rsi.toFixed(0));
+  else parts.push('RSI neutral at ' + rsi.toFixed(0));
+
+  // MACD
+  parts.push(macdBull ? 'MACD bullish' : 'MACD bearish');
+
+  // Trend vs moving averages
+  if (above50 && above200) parts.push('price above both 50 & 200 DMA (uptrend)');
+  else if (!above50 && !above200) parts.push('price below both 50 & 200 DMA (downtrend)');
+  else if (above50) parts.push('price above 50 DMA');
+  else parts.push('price below 50 DMA');
+
+  // Volume note when notable
+  if (vol >= 1.5) parts.push('volume ' + vol.toFixed(1) + 'x average');
+
+  var body = parts.join(', ') + '.';
+
+  if (signal === 'BUY')  return 'Bullish setup: ' + body + ' Momentum favours an entry.';
+  if (signal === 'SELL') return 'Bearish setup: ' + body + ' Pressure favours exiting or shorting.';
+  return 'Mixed signals: ' + body + ' No clear directional edge yet.';
 }
 
 async function getMood() {
@@ -3071,13 +3085,8 @@ async function getMood() {
   ST.forEach(function(s){ var sg=SG[s]; if(!sg)return; ac+=sg.confidence; cc++; if(sg.signal==='BUY')bc++; if(sg.signal==='SELL')sc++; });
   ac=cc?Math.round(ac/cc):60;
   var fi=Math.round(100-(cc?(bc/cc)*100:50));
-  if (!GK||GK.length<10) return dMood(bc,sc,fi);
-  try {
-    var ctx='Scan: '+bc+' BUY, '+sc+' SELL of '+cc+' stocks. Avg conf: '+ac+'%. Fear idx: '+fi+'.';
-    var txt=await groq('Samridhi AI. '+ctx+' JSON only: {"mood":"Bullish","fearIndex":'+fi+',"summary":"2 concise sentences.","items":[{"stock":"HDFC Bank","type":"bull","txt":"Brief."},{"stock":"Reliance","type":"bull","txt":"Brief."},{"stock":"Tata Motors","type":"bear","txt":"Brief."},{"stock":"Infosys","type":"neut","txt":"Brief."}]}');
-    var m=txt.match(/\{[\s\S]*\}/); if(!m)return dMood(bc,sc,fi);
-    var p=JSON.parse(m[0]); p.fearIndex=fi; return p;
-  } catch(e){ return dMood(bc,sc,fi); }
+  // Market mood is computed from the scan's own signal breadth — no external AI needed.
+  return dMood(bc,sc,fi);
 }
 function dMood(bc,sc,fi) {
   var f=(fi!=null&&fi!=undefined)?fi:null, mood=f===null?'Neutral':f<40?'Bullish':f>60?'Bearish':'Neutral';
@@ -3087,7 +3096,7 @@ function dMood(bc,sc,fi) {
 
 
 async function runScan(){
-  if(!GK){toast('Scanning with rule engine — add Groq key in Settings for AI explanations','ok');}
+  if(false){/* analysis is always built-in now */}
   SD={};SG={};PK=[];
   document.getElementById('loading').style.display='flex';
   var lc=document.getElementById('lchips');lc.innerHTML='';
@@ -3203,31 +3212,9 @@ async function runScan(){
     if(sig.signal!=='HOLD')PK.push({sym:s,signal:sig,data:SD[s]});
   }
 
-  // STEP 3b: Per-stock AI explanations via Groq — batched 5 at a time, 2s delay.
-  // Safe within Groq free tier (30 req/min). Falls back to math text if no key.
-  if(GK && GK.length>10){
-    var groqSyms=Object.keys(SG).filter(function(s){return SD[s];});
-    var GROQ_BATCH=5;
-    for(var gi=0; gi<groqSyms.length; gi+=GROQ_BATCH){
-      var gChunk=groqSyms.slice(gi,gi+GROQ_BATCH);
-      setP(76+Math.round((gi/groqSyms.length)*22),'Writing analysis ('+Math.min(gi+GROQ_BATCH,groqSyms.length)+'/'+groqSyms.length+')...','Groq');
-      for(var gj=0;gj<gChunk.length;gj++){
-        var gs=gChunk[gj];
-        try{
-          var gd=SD[gs], gsg=SG[gs];
-          var gep='NSE analyst. 1-2 sentences why '+(NM[gs]||gs)+' ('+gs+') is a '+gsg.signal+'. RSI='+gd.rsi.toFixed(1)+', MACD='+(gd.macd&&gd.macd.bull?'Bull':'Bear')+', vs50DMA='+(gd.price>gd.sma50?'above':'below')+', score='+gsg.confidence+'%. Max 28 words, plain text.';
-          var greason=await groq(gep);
-          greason=greason.replace(/[^ -~]/g,'').replace(/[*#]/g,'').trim().slice(0,180);
-          if(greason && greason.length>4){
-            SG[gs].reason=greason;
-            var gpk=PK.find(function(p){return p.sym===gs;});
-            if(gpk)gpk.signal.reason=greason;
-          }
-        }catch(e){ /* keep math fallback */ }
-      }
-      if(gi+GROQ_BATCH < groqSyms.length) await sl(2000);
-    }
-  }
+  // STEP 3b: Per-stock explanations are generated by the built-in writer (fallbackReason)
+  // inside fb() during signal generation — instant, free, no external API, never rate-limited.
+  // Every signal already has an accurate explanation derived from its own indicators.
 
   PK=applyStratMode(PK);
   PK.sort(function(a,b){return b.signal.confidence-a.signal.confidence;});
@@ -3411,13 +3398,9 @@ function launch(n,gk){
 document.getElementById('launchBtn').addEventListener('click',function(){
   var n=document.getElementById('uname').value.trim()||'Friend';
   var gk=document.getElementById('groqKey').value.trim();
-  if(!gk||gk.length<10){
-    alert('Please enter your Groq API key in Settings');
-    document.getElementById('groqKey').focus();
-    return;
-  }
+  // Groq key is no longer required — all analysis is built-in.
   sv('s_n',n);
-  try{sv('s_gem',btoa(gk));}catch(e){}
+  if(gk&&gk.length>10){ try{sv('s_gem',btoa(gk));}catch(e){} }
   launch(n,gk);
 });
 
@@ -5474,31 +5457,58 @@ function appendAIThinking(){
 }
 
 async function sendAIChat(){
-  if(!GK || GK.length<10){ appendAIMsg('assistant','Please enter your Groq API key in Settings to use the AI chat.'); return; }
   var input=document.getElementById('aiChatInput');
   var q=input.value.trim(); if(!q) return;
   input.value='';
   appendAIMsg('user',q);
   AIC_HISTORY.push({role:'user',content:q});
-  appendAIThinking();
-  // Build context
-  var ctx='You are Samridhi AI, a friendly NSE stock market analyst assistant. ';
-  if(PK.length){ ctx+='Current top signals: '+PK.slice(0,5).map(function(p){ return p.sym+'('+p.signal.signal+' '+p.signal.confidence+'% confidence, entry Rs.'+p.signal.entry+', target Rs.'+p.signal.target+')'; }).join(', ')+'. '; }
-  if(Object.keys(SD).length){ ctx+='Watchlist has '+ST.length+' stocks. '; }
-  ctx+='Answer concisely in 2-3 sentences. Be helpful, educational, and use Indian market context (NSE/BSE, Rs., Indian sectors). If asked about a specific stock signal, refer to the data provided.';
-  try{
-    // Build a single prompt from system context + recent history
-    var hist=AIC_HISTORY.slice(-8).map(function(m){ return (m.role==='user'?'User: ':'Assistant: ')+m.content; }).join('\n');
-    var fullPrompt=ctx+'\n\nConversation so far:\n'+hist+'\nAssistant:';
-    var reply=await groq(fullPrompt);
-    var thinking=document.getElementById('aiThinking'); if(thinking) thinking.remove();
-    if(!reply){ appendAIMsg('assistant','Sorry, I did not get a response. Please try again.'); return; }
-    AIC_HISTORY.push({role:'assistant',content:reply});
-    appendAIMsg('assistant',reply);
-  }catch(e){
-    var thinking2=document.getElementById('aiThinking'); if(thinking2) thinking2.remove();
-    appendAIMsg('assistant','Sorry, I could not connect to Groq. Please check your API key in Settings.');
+  var reply = answerFromData(q);
+  AIC_HISTORY.push({role:'assistant',content:reply});
+  appendAIMsg('assistant',reply);
+}
+
+// Built-in assistant — answers from the actual scan data, no external AI needed.
+function answerFromData(q){
+  var ql = q.toLowerCase();
+
+  // 1. Did the user name a specific stock?
+  var found = null;
+  for(var i=0;i<ST.length;i++){
+    var s=ST[i];
+    if(ql.indexOf(s.toLowerCase())>-1 || (NM[s]&&ql.indexOf(NM[s].toLowerCase())>-1)){ found=s; break; }
   }
+  if(found && SG[found] && SD[found]){
+    var sig=SG[found], d=SD[found];
+    return (NM[found]||found)+' is currently a '+sig.signal+' at '+sig.confidence+'% confidence. '+
+      'Price Rs.'+d.price.toFixed(2)+(sig.signal!=='HOLD'?(', entry Rs.'+sig.entry+', target Rs.'+sig.target+', stop loss Rs.'+sig.stopLoss):'')+'. '+
+      (sig.reason||fallbackReason(sig.signal,d));
+  }
+  if(found && (!SG[found])){
+    return (NM[found]||found)+' is in your watchlist, but you need to run a scan first to get its current signal.';
+  }
+
+  // 2. General intents
+  if(ql.indexOf('buy')>-1 || ql.indexOf('top pick')>-1 || ql.indexOf('best')>-1){
+    var buys=PK.filter(function(p){return p.signal.signal==='BUY';}).slice(0,5);
+    if(!buys.length) return 'No BUY signals right now. The market breadth is weak today, so sitting out may be wise. Run a fresh scan during market hours for the latest.';
+    return 'Top BUY signals right now: '+buys.map(function(p){return (NM[p.sym]||p.sym)+' ('+p.signal.confidence+'%)';}).join(', ')+'. Tap any signal to see entry, target and stop loss.';
+  }
+  if(ql.indexOf('sell')>-1){
+    var sells=PK.filter(function(p){return p.signal.signal==='SELL';}).slice(0,5);
+    if(!sells.length) return 'No SELL signals right now.';
+    return 'Current SELL signals: '+sells.map(function(p){return (NM[p.sym]||p.sym)+' ('+p.signal.confidence+'%)';}).join(', ')+'.';
+  }
+  if(ql.indexOf('market')>-1 || ql.indexOf('mood')>-1 || ql.indexOf('today')>-1){
+    var bc=PK.filter(function(p){return p.signal.signal==='BUY';}).length;
+    var sc=PK.filter(function(p){return p.signal.signal==='SELL';}).length;
+    return 'Today there are '+bc+' BUY and '+sc+' SELL signals across '+ST.length+' stocks. '+(bc>sc?'Breadth is leaning positive — a reasonable day to look for entries.':'Breadth is cautious — be selective and respect your stop losses.');
+  }
+  if(ql.indexOf('rsi')>-1) return 'RSI (Relative Strength Index) measures momentum from 0-100. Below 30 is oversold (possible bounce), above 70 is overbought (possible pullback). Samridhi factors RSI into every signal.';
+  if(ql.indexOf('stop')>-1 || ql.indexOf('risk')>-1) return 'Every Samridhi signal includes a stop loss based on the stock\'s own volatility (ATR). The rule of thumb: never risk more than 2% of your capital on a single trade.';
+  if(ql.indexOf('how many')>-1 || ql.indexOf('signal')>-1) return 'There are currently '+PK.length+' active signals. Open the Signals tab to filter by Intraday, Swing or Positional.';
+
+  // 3. Fallback
+  return 'I can help with signals from your latest scan. Try asking: "What are the top buys?", "How is the market today?", or name a stock like "What about Reliance?". For best results, run a scan first.';
 }
 
 </script>
@@ -7583,53 +7593,7 @@ function p16RenderOneSignal() {
 var _p16OrigGetSig = getSig;
 getSig = async function(sym, dat) {
   var scored = calcScore(dat);
-  var GK_ = (typeof GK !== 'undefined') ? GK : '';
-  var reason = '';
-
-  if (GK_ && GK_.length > 10) {
-    try {
-      var name = (typeof NM !== 'undefined' && NM[sym]) ? NM[sym] : sym;
-      var sector = (typeof SEC !== 'undefined' && SEC[sym]) ? SEC[sym] : '';
-      var rsi = dat.rsi ? dat.rsi.toFixed(1) : '50';
-      var macdTxt = dat.macd && dat.macd.bull ? 'bullish crossover' : 'bearish crossover';
-      var trendTxt = dat.price > (dat.sma50 || dat.price) ? 'above 50 DMA (uptrend)' : 'below 50 DMA (downtrend)';
-      var volTxt = (dat.volR || 1) > 1.5 ? 'high volume surge (' + (dat.volR || 1).toFixed(1) + 'x avg)' : 'normal volume';
-      var atrTxt = ((dat.atr || dat.price * 0.012) / dat.price * 100).toFixed(1) + '% daily range';
-      var confTxt = scored.confidence + '%';
-
-      // Varied prompt templates to avoid repetition
-      var templates = [
-        'NSE analyst. Explain in exactly 1 sentence why ' + name + ' (' + sector + ') is a ' + scored.signal + ' right now. RSI: ' + rsi + ', MACD: ' + macdTxt + ', price ' + trendTxt + ', ' + volTxt + '. AI confidence: ' + confTxt + '. Be specific — mention the strongest indicator. No jargon. Max 25 words.',
-        'Trading signal for ' + name + ': ' + scored.signal + '. Key data: RSI ' + rsi + ', MACD ' + macdTxt + ', ' + trendTxt + ', ' + atrTxt + '. Write 1 sentence explaining the main reason for this signal, no jargon, max 25 words.',
-        name + ' in ' + sector + ' sector is showing a ' + scored.signal + ' signal. RSI is ' + rsi + '. MACD is ' + macdTxt + '. Price is ' + trendTxt + '. Write one clear sentence explaining why this stock looks like a ' + scored.signal + ' to a beginner. Max 25 words. Plain text only.'
-      ];
-
-      // Pick template based on stock hash to vary outputs
-      var tIdx = sym.charCodeAt(0) % templates.length;
-      var ep = templates[tIdx];
-
-      var r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GK_ },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: ep }],
-          max_tokens: 80,
-          temperature: 0.35
-        })
-      });
-      var d = await r.json();
-      if (!d.error) {
-        reason = d.choices[0].message.content;
-        reason = reason.replace(/[^a-zA-Z0-9₹%.,\-\s()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 180);
-      }
-    } catch(e) { reason = ''; }
-  }
-
-  if (!reason || reason.length < 10) {
-    reason = (typeof fallbackReason !== 'undefined') ? fallbackReason(scored.signal, dat) : scored.signal + ' signal detected.';
-  }
-
+  var reason = (typeof fallbackReason !== 'undefined') ? fallbackReason(scored.signal, dat) : scored.signal + ' signal detected.';
   return {
     signal: scored.signal,
     confidence: scored.confidence,
@@ -9864,7 +9828,7 @@ calcScore = function(dat, timeframeHint) {
 <!-- ══════════════════════════════════════════════════════════
      PHASE 21 — FUNDAMENTAL LAYER + SAFETY CHECK
      • Fetches PE, EPS, promoter holding, FII/DII per stock
-       (Yahoo Finance first, Groq AI fallback)
+       (Yahoo Finance / built-in estimates)
      • Earnings Blackout — no signals 3 days before results
      • Samridhi Safety Check badge on every signal card
      • Combined Score = Technical + Fundamental
@@ -10004,8 +9968,13 @@ async function p21FetchFundYahoo(sym) {
   } catch(e) { return null; }
 }
 
-// ── Groq fallback — estimates fundamentals from knowledge ──
+// ── Fundamental estimation via AI is disabled ──
+// AI-guessed PE/EPS numbers are not reliable enough for a trading tool.
+// Returns null so the app uses real fundamental sources or skips gracefully.
 async function p21FetchFundGroq(sym) {
+  return null;
+}
+async function _p21FetchFundGroq_disabled(sym) {
   if (!GK || GK.length < 10) return null;
   try {
     var name = NM[sym] || sym;
@@ -10440,7 +10409,7 @@ window.p21CheckWeekendGap     = p21CheckWeekendGap;
      22A: Plain English signal explanations
      22B: "What Should I Do?" action card
      22C: Beginner Mode (first-launch prompt + Settings toggle)
-     22E: News Sentiment Filter (Groq — badges only)
+     22E: News Sentiment Filter (disabled — built-in only)
      ══════════════════════════════════════════════════════════ -->
 
 <style>
@@ -10910,6 +10879,11 @@ function p22GetShares(sym, sig, dat) {
 // ════════════════════════════════════════════════════════
 
 async function p22CheckNews(sym) {
+  // AI-based news checking is disabled — an LLM cannot verify real-time news reliably.
+  // Returns null so no false news flags are shown. (Real news API can be added later.)
+  return null;
+}
+async function _p22CheckNews_disabled(sym) {
   // Return cache if fresh (< 3 hours)
   var cached = P22_NEWS_CACHE[sym];
   if (cached && (Date.now() - cached.ts) < 3 * 3600 * 1000) return cached;
@@ -10962,7 +10936,7 @@ function p22ShowNewsDetail(sym) {
     + '<div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;"></div>'
     + '<div style="font-size:14px;font-weight:700;color:var(--sell);margin-bottom:8px;">⚠ News Flagged — ' + name + '</div>'
     + '<div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;">' + cached.headline + '</div>'
-    + '<div style="font-size:11px;color:var(--muted);background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.15);border-radius:10px;padding:10px 12px;margin-bottom:20px;">This is an AI-generated assessment based on Groq\'s training data, not a live news feed. Always verify before acting.</div>'
+    + '<div style="font-size:11px;color:var(--muted);background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.15);border-radius:10px;padding:10px 12px;margin-bottom:20px;">News checking is currently disabled. Always verify recent news before acting.</div>'
     + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="width:100%;padding:12px;background:var(--bg,#f4f4f6);color:var(--navy);border:none;border-radius:12px;font-size:14px;cursor:pointer;font-family:\'Sora\',sans-serif;">Close</button>'
     + '</div>';
   document.body.appendChild(overlay);
