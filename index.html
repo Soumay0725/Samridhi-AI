@@ -3060,6 +3060,11 @@ async function runScan(){
       await sl(20);
     }
     var okCount=Object.values(SD).filter(function(d){return d;}).length;
+    // FIX #3: Track exactly which symbols failed to load (the "missing 8")
+    window.MISSING_SYMS = ST.filter(function(s){ return !SD[s]; });
+    if(window.MISSING_SYMS.length){
+      console.log('⚠️ MISSING ('+window.MISSING_SYMS.length+'):', window.MISSING_SYMS.join(', '));
+    }
     setP(42,'Upstox data ready','Upstox ('+okCount+'/'+ST.length+')');
   } else {
     // ── Upstox DOWN: Yahoo backup, prices only, signals paused ──
@@ -3152,8 +3157,10 @@ async function runScan(){
   var liveCount=Object.values(SD).filter(function(d){return d&&d.isYahoo||d&&d.isLive;}).length;
   var freshEl=document.getElementById('freshT');
   if(freshEl){
-    freshEl.textContent=ts+' ['+liveCount+' Live]';
+    var missCount=(window.MISSING_SYMS||[]).length;
+    freshEl.textContent=ts+' ['+liveCount+' Live]'+(missCount?' · '+missCount+' missing: '+window.MISSING_SYMS.join(', '):'');
     freshEl.style.color=liveCount>ST.length*0.7?'var(--emerald)':'#B8922A';
+    if(missCount) freshEl.title='These '+missCount+' stocks did not return enough Upstox history: '+window.MISSING_SYMS.join(', ');
   }
   document.getElementById('scanSt').textContent=PK.length+' signals';
   document.getElementById('sm1').textContent=ST.length+' stocks';
@@ -3222,7 +3229,10 @@ function wlRow(sym,i,full){
   var pts='';if(d&&d.closes&&d.closes.length>1){var mn=Math.min.apply(null,d.closes),mx=Math.max.apply(null,d.closes),rng=mx-mn||1;pts=d.closes.map(function(v,j){return(j*(58/(d.closes.length-1)))+','+(18-((v-mn)/rng)*14);}).join(' ');}
   var bc=sig?(sig.signal==='BUY'?'pbuy':sig.signal==='SELL'?'psell':'phold'):'';
   var row=document.createElement('div');row.className='wl-row';
-  if(full)row.style.cssText='border-radius:14px;margin-bottom:6px;';
+  row.setAttribute('data-sym',sym);  // FIX: bind symbol to the row itself, not a positional index
+  row.style.cursor='pointer';
+  row.onclick=function(){openDetail(sym);};  // FIX: each row opens ITS OWN stock
+  if(full)row.style.cssText='border-radius:14px;margin-bottom:6px;cursor:pointer;';
   row.innerHTML='<div class="wl-ico" style="background:'+IC[ci]+';color:'+IT[ci]+';">'+ICN[sym]+'</div><div style="flex:1;min-width:0;"><div class="wl-nm">'+NM[sym]+(d&&d.isLive?'<span class="live-tag" style="margin-left:6px;">Live</span>':'')+'</div><div class="wl-sec">'+SEC[sym]+'</div></div>'+(pts?'<svg viewBox="0 0 60 20" width="60" height="18" style="flex-shrink:0;margin:0 10px;"><polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/></svg>':'<div style="width:60px;margin:0 10px;"></div>')+'<div style="text-align:right;min-width:72px;"><div class="wl-price">'+(d?'Rs.'+d.price.toFixed(2):'-')+'</div><div class="wl-chg" style="color:'+cc+';">'+(d?(d.chg>=0?'+':'')+d.chg.toFixed(2)+'%':'-')+'</div></div>'+(sig?'<span class="pbadge '+bc+'" style="margin-left:8px;flex-shrink:0;">'+sig.signal+'</span>':'<span style="font-size:11px;color:var(--muted);margin-left:8px;">-</span>');
   return row;
 }
@@ -3560,18 +3570,12 @@ rPicks=function(){
 var _origRHWL=rHWL;
 rHWL=function(){
   _origRHWL();
-  document.querySelectorAll('#hWL .wl-row').forEach(function(row,i){
-    var sym=ST[i];
-    if(sym) row.onclick=function(){openDetail(sym);};
-  });
+  // Click handlers are now set inside wlRow() using each row's own symbol — no positional lookup needed.
 };
 var _origRWLFull=rWLFull;
 rWLFull=function(){
   _origRWLFull();
-  document.querySelectorAll('#wlFull .wl-row').forEach(function(row,i){
-    var sym=ST[i];
-    if(sym) row.onclick=function(){openDetail(sym);};
-  });
+  // Click handlers are now set inside wlRow() using each row's own symbol — fixes filtered-search opening wrong stock.
 };
 
 //  PHASE 2: SIGNALS PAGE 
