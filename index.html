@@ -2828,13 +2828,98 @@ async function fetchYahooIndices(){
 function enrich(d){
   // Do NOT fabricate random closes — use flat line at price as neutral placeholder
   if(!d.closes||d.closes.length<2){var cl=[];for(var j=0;j<14;j++)cl.push(d.price);d.closes=cl;}
-  // RSI: neutral 50 if insufficient data — never random
-  if(!d.rsi) d.rsi=50;
-  // MACD: derive from price vs sma if available, else neutral
-  if(!d.macd)d.macd={bull:d.price>(d.sma50||d.price)};
-  if(!d.sma50)d.sma50=d.price;
-  if(!d.sma200)d.sma200=d.price;
-  if(!d.volR)d.volR=0.9; // neutral — no bullish bias when volume data unavailable
+
+  var closes = d.closes;
+  var highs  = d.highs  || closes;
+  var lows   = d.lows   || closes;
+  var volumes= d.volumes|| [];
+  var price  = d.price || closes[closes.length-1];
+
+  // Ensure last close = current live price (so indicators reflect latest)
+  if(closes.length>0) closes[closes.length-1]=price;
+
+  // == REAL RSI (14-period full Wilder chain) ==
+  var rsi=50;
+  if(closes.length>=15){
+    var avgG=0,avgL=0;
+    for(var i=1;i<=14;i++){
+      var d0=closes[i]-closes[i-1];
+      if(d0>0)avgG+=d0; else avgL+=Math.abs(d0);
+    }
+    avgG/=14; avgL/=14;
+    for(var i=15;i<closes.length;i++){
+      var d0=closes[i]-closes[i-1];
+      var g=d0>0?d0:0, l=d0<0?Math.abs(d0):0;
+      avgG=(avgG*13+g)/14;
+      avgL=(avgL*13+l)/14;
+    }
+    rsi=avgL===0?100:parseFloat((100-(100/(1+(avgG/avgL)))).toFixed(1));
+  }
+
+  // == REAL SMA 20 / 50 / 200 ==
+  var sma20=price, sma50=price, sma200=price;
+  if(closes.length>=20)  sma20=parseFloat((closes.slice(-20).reduce(function(a,b){return a+b;},0)/20).toFixed(2));
+  if(closes.length>=50)  sma50=parseFloat((closes.slice(-50).reduce(function(a,b){return a+b;},0)/50).toFixed(2));
+  if(closes.length>=200) sma200=parseFloat((closes.slice(-200).reduce(function(a,b){return a+b;},0)/200).toFixed(2));
+
+  // == REAL MACD (12 EMA - 26 EMA) ==
+  function calcEMA(arr, period){
+    if(arr.length<period) return arr[arr.length-1]||0;
+    var k=2/(period+1), ema=arr.slice(0,period).reduce(function(a,b){return a+b;},0)/period;
+    for(var i=period;i<arr.length;i++) ema=arr[i]*k+ema*(1-k);
+    return ema;
+  }
+  var macdBull=false;
+  if(closes.length>=26){
+    var ema12=calcEMA(closes,12);
+    var ema26=calcEMA(closes,26);
+    var macdLine=ema12-ema26;
+    var macdValues=[];
+    for(var i=26;i<=closes.length;i++){
+      var slice=closes.slice(0,i);
+      macdValues.push(calcEMA(slice,12)-calcEMA(slice,26));
+    }
+    var signalLine=macdValues.length>=9?calcEMA(macdValues,9):macdValues[macdValues.length-1]||0;
+    macdBull=macdLine>signalLine;
+  } else {
+    macdBull=sma20>sma50;
+  }
+
+  // == REAL VOLUME RATIO (today vs 20-day avg) ==
+  var volR=0.9;
+  var todayVol=d.volume||0;
+  if(volumes.length>=20&&todayVol>0){
+    var avgVol20=volumes.slice(-20).reduce(function(a,b){return a+b;},0)/20;
+    volR=avgVol20>0?parseFloat((todayVol/avgVol20).toFixed(2)):0.9;
+  }
+  volR=Math.max(0.1,Math.min(5,volR));
+
+  // == REAL ATR (14-period True Range average) ==
+  var atr = price * 0.012;
+  if(highs.length>=14 && lows.length>=14 && closes.length>=15){
+    var trValues=[];
+    for(var i=1;i<highs.length&&i<lows.length&&i<closes.length;i++){
+      var prevClose=closes[i-1];
+      var tr=Math.max(highs[i]-lows[i],Math.abs(highs[i]-prevClose),Math.abs(lows[i]-prevClose));
+      trValues.push(tr);
+    }
+    if(trValues.length>=14){
+      var atrVal=trValues.slice(0,14).reduce(function(a,b){return a+b;},0)/14;
+      for(var j=14;j<trValues.length;j++) atrVal=(atrVal*13+trValues[j])/14;
+      atr=parseFloat(atrVal.toFixed(2));
+    }
+  }
+
+  // Assign computed indicators (only if not already supplied)
+  d.rsi    = rsi;
+  d.sma20  = sma20;
+  d.sma50  = sma50;
+  d.sma200 = sma200;
+  d.macd   = { bull: macdBull };
+  d.volR   = volR;
+  d.atr    = atr;
+  if(d.w52High==null) d.w52High = highs.length>0 ? Math.max.apply(null,highs) : price*1.3;
+  if(d.w52Low==null)  d.w52Low  = lows.length>0  ? Math.min.apply(null,lows)  : price*0.7;
   return d;
 }
 
