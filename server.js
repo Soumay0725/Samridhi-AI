@@ -1,12 +1,13 @@
 // ════════════════════════════════════════════════════════
-//  SAMRIDHI AI — UPSTOX SERVER (Phase 24)
-//  - AUTO-ISIN: downloads Upstox official instrument master on
-//    startup and maps every NSE symbol -> correct instrument_key
-//    (NSE_EQ|<ISIN>), which is what Upstox actually requires.
-//  - Fixes the persistent "No data for SYM" 404 errors.
-//  - Auto-validates all symbols; /instruments/missing lists
-//    any of your symbols Upstox does NOT recognise.
-//  - Keeps Phase 23C one-tap orders, positions, funds.
+//  SAMRIDHI AI — UPSTOX SERVER (Phase 24.2)
+//  FIXED in this version:
+//   • buildPrice() now computes change% correctly using Upstox
+//     net_change field (was always 0.00% because it subtracted
+//     the close price from itself).
+//   • Always SHOWS last_price (the real traded price) so prices
+//     are paisa-accurate whether market is open or closed.
+//   • prevClose now derived correctly = last_price - net_change.
+//   • Everything else (auto-ISIN resolve, orders, batch) unchanged.
 // ════════════════════════════════════════════════════════
 
 const express = require('express');
@@ -33,19 +34,12 @@ const priceCache = {};
 const CACHE_TTL  = 15 * 1000;
 
 // ════════════════════════════════════════════════════════
-//  INSTRUMENT MAP  (the real fix)
-//  symbol (e.g. "TCS")  ->  instrument_key (e.g. "NSE_EQ|INE467B01029")
+//  INSTRUMENT MAP
 // ════════════════════════════════════════════════════════
-// We build this map LAZILY using Upstox's authenticated instrument-search
-// endpoint (/v2/instruments/search). No blocked file downloads, no static
-// ISIN list to maintain, always current. Each symbol is resolved once then
-// cached for the life of the process.
-let SYMBOL_TO_KEY = {};      // { TCS: 'NSE_EQ|INE467B01029', ... }
-let KEY_TO_SYMBOL = {};      // reverse, for parsing responses
-const unresolved = {};       // symbols we tried but Upstox didn't return
+let SYMBOL_TO_KEY = {};
+let KEY_TO_SYMBOL = {};
+const unresolved = {};
 
-// A small seed of well-known ISINs so the most common stocks work instantly
-// even before the search endpoint resolves them. (Verified from Upstox docs.)
 const SEED = {
   'RELIANCE':'NSE_EQ|INE002A01018',
   'INFY':'NSE_EQ|INE009A01021',
@@ -60,12 +54,10 @@ const SEED = {
 Object.assign(SYMBOL_TO_KEY, SEED);
 Object.entries(SEED).forEach(([s,k]) => KEY_TO_SYMBOL[k] = s);
 
-// Resolve ONE symbol to its instrument_key via the authenticated search API.
-// Returns the key, or null if Upstox doesn't recognise the symbol.
 async function resolveSymbol(sym) {
   const s = sym.toUpperCase();
   if (SYMBOL_TO_KEY[s]) return SYMBOL_TO_KEY[s];
-  if (!accessToken) return null;            // need a token to search
+  if (!accessToken) return null;
   try {
     const resp = await axios.get('https://api.upstox.com/v2/instruments/search', {
       params:  { query: s },
@@ -73,13 +65,11 @@ async function resolveSymbol(sym) {
       timeout: 8000
     });
     const arr = resp.data?.data || [];
-    // Prefer an exact NSE_EQ equity match on trading_symbol
     let hit = arr.find(i =>
       (i.segment === 'NSE_EQ' || (i.instrument_key||'').startsWith('NSE_EQ|')) &&
       (i.instrument_type === 'EQ') &&
       (i.trading_symbol||'').toUpperCase() === s
     );
-    // Fallback: any NSE_EQ equity whose symbol starts with our query
     if (!hit) {
       hit = arr.find(i =>
         (i.instrument_key||'').startsWith('NSE_EQ|') &&
@@ -103,7 +93,6 @@ async function resolveSymbol(sym) {
   }
 }
 
-// Resolve many symbols (used to warm the cache after auth)
 async function resolveMany(syms) {
   for (const s of syms) {
     if (!SYMBOL_TO_KEY[s.toUpperCase()]) {
@@ -112,24 +101,19 @@ async function resolveMany(syms) {
   }
 }
 
-// Synchronous lookup — only returns a key if already resolved.
 function toUpstoxKey(sym) {
   const s = sym.toUpperCase();
-  return SYMBOL_TO_KEY[s] || ('NSE_EQ|' + s); // fallback never crashes
+  return SYMBOL_TO_KEY[s] || ('NSE_EQ|' + s);
 }
 
-// Given the Upstox response dataMap, find this symbol's data.
-// Upstox keys responses by instrument_key OR by "NSE_EQ:SYMBOL".
 function extractFromUpstoxData(dataMap, sym) {
   const s = sym.toUpperCase();
   const key = SYMBOL_TO_KEY[s];
   if (key && dataMap[key]) return dataMap[key];
-  // Try common response key formats
   const alt1 = 'NSE_EQ:' + s;
   const alt2 = 'NSE_EQ|' + s;
   if (dataMap[alt1]) return dataMap[alt1];
   if (dataMap[alt2]) return dataMap[alt2];
-  // Last resort: scan for a value whose instrument_token maps back to this symbol
   for (const k of Object.keys(dataMap)) {
     if (KEY_TO_SYMBOL[k] === s) return dataMap[k];
   }
@@ -139,12 +123,11 @@ function extractFromUpstoxData(dataMap, sym) {
 // ════════════════════════════════════════════════════════
 //  HEALTH
 // ════════════════════════════════════════════════════════
-
 app.get('/health', (req, res) => {
   res.json({
     status:   'ok',
     service:  'Samridhi AI Upstox Server',
-    version:  '24.1',
+    version:  '24.2',
     hasToken: !!accessToken,
     tokenExp: tokenExpiry ? new Date(tokenExpiry).toISOString() : null,
     cached:   Object.keys(priceCache).length,
@@ -155,9 +138,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── Check which of a set of symbols Upstox recognises ────
-//  GET /instruments/check?syms=TCS,TMPV,FOOBAR
-//  (resolves any not-yet-known symbols on the fly)
 app.get('/instruments/check', async (req, res) => {
   const raw = (req.query.syms || '').trim();
   if (!raw) return res.status(400).json({ error: 'syms required' });
@@ -171,7 +151,7 @@ app.get('/instruments/check', async (req, res) => {
     validCount: valid.length,
     missingCount: missing.length,
     valid,
-    missing,          // <-- symbols Upstox does NOT recognise (the real broken ones)
+    missing,
     keys: valid.reduce((o,s)=>{o[s]=SYMBOL_TO_KEY[s];return o;}, {})
   });
 });
@@ -179,7 +159,6 @@ app.get('/instruments/check', async (req, res) => {
 // ════════════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════════════
-
 app.get('/auth/url', (req, res) => {
   const url = `https://api.upstox.com/v2/login/authorization/dialog`
     + `?client_id=${UPSTOX_API_KEY}`
@@ -231,10 +210,6 @@ app.get('/auth/status', (req, res) => {
   res.json({ authenticated: !!valid, expires: tokenExpiry });
 });
 
-// ── Real Upstox health probe ─────────────────────────────
-//  Actually tries to fetch a quote (RELIANCE) so the frontend
-//  can reliably tell if Upstox is truly working right now.
-//  Used by the scan to decide: Upstox-live vs Yahoo-backup.
 app.get('/upstox/health', async (req, res) => {
   if (!accessToken) return res.json({ ok: false, reason: 'no_token' });
   try {
@@ -253,47 +228,71 @@ app.get('/upstox/health', async (req, res) => {
   }
 });
 
-// ── Is NSE open right now? (IST, Mon-Fri, 9:15-15:30) ────
-// Note: does not account for trading holidays (can add later).
 function isMarketOpen() {
   const now = new Date();
-  // Convert to IST
   const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const day = ist.getDay();              // 0=Sun, 6=Sat
+  const day = ist.getDay();
   if (day === 0 || day === 6) return false;
   const mins = ist.getHours() * 60 + ist.getMinutes();
   return mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30);
 }
 
-// ── Build a price object from an Upstox quote entry ──────
-//  Market OPEN  -> show live last_price
-//  Market SHUT  -> show official close (matches Groww/Google)
+// ════════════════════════════════════════════════════════
+//  buildPrice — FIXED
+//  Upstox full-quote provides:
+//    last_price  = real last traded price  (always show this)
+//    net_change  = absolute change vs previous close (USE THIS for %)
+//    ohlc.close  = CURRENT day's close (NOT previous) → cannot be used for %
+//  True prevClose = last_price - net_change
+//  % change       = net_change / prevClose * 100
+// ════════════════════════════════════════════════════════
 function buildPrice(sym, d, ts) {
   const open = isMarketOpen();
-  const ltp = d.last_price;
-  const close = d.ohlc?.close;
-  // When shut, prefer the official close; fall back to ltp if missing
-  const shown = (!open && close) ? close : ltp;
+  const ltp  = Number(d.last_price) || 0;
+
+  // Upstox gives net_change directly — this is the reliable source for % change.
+  // It is the absolute rupee change from the previous trading day's close.
+  let netChange = (d.net_change !== undefined && d.net_change !== null)
+    ? Number(d.net_change)
+    : null;
+
+  let prevClose, chgPct, chgAbs;
+
+  if (netChange !== null && ltp > 0) {
+    // Preferred path: derive prevClose from ltp and net_change
+    prevClose = ltp - netChange;
+    chgAbs    = netChange;
+    chgPct    = prevClose !== 0 ? (netChange / prevClose * 100) : 0;
+  } else {
+    // Fallback: Upstox didn't send net_change.
+    // ohlc.close here is current-day close; only usable as a rough prevClose
+    // when net_change is absent. Better than forcing 0.
+    const ohClose = Number(d.ohlc?.close) || 0;
+    prevClose = ohClose || ltp;
+    chgAbs    = ltp && prevClose ? (ltp - prevClose) : 0;
+    chgPct    = prevClose ? (chgAbs / prevClose * 100) : 0;
+  }
+
   return {
     sym,
-    price:     parseFloat(Number(shown).toFixed(2)),
-    open:      d.ohlc?.open  || ltp,
-    high:      d.ohlc?.high  || ltp,
-    low:       d.ohlc?.low   || ltp,
-    prevClose: close || ltp,
-    chg:       close ? parseFloat(((shown - close) / close * 100).toFixed(2)) : 0,
-    volume:    d.volume || 0,
-    isLive:    open,
+    price:      parseFloat(ltp.toFixed(2)),           // always real last traded price
+    open:       Number(d.ohlc?.open)  || ltp,
+    high:       Number(d.ohlc?.high)  || ltp,
+    low:        Number(d.ohlc?.low)   || ltp,
+    prevClose:  parseFloat(Number(prevClose).toFixed(2)),
+    chg:        parseFloat(Number(chgPct).toFixed(2)),  // % change — now correct
+    chgAbs:     parseFloat(Number(chgAbs).toFixed(2)),  // rupee change
+    volume:     d.volume || 0,
+    isLive:     open,
     marketOpen: open,
-    source:    'upstox',
-    ts:        ts || Date.now()
+    source:     'upstox',
+    ts:         ts || Date.now()
   };
 }
 
 // ════════════════════════════════════════════════════════
 //  LIVE QUOTE — single stock   GET /quote/TCS
 // ════════════════════════════════════════════════════════
-
 app.get('/quote/:sym', async (req, res) => {
   if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
 
@@ -301,7 +300,6 @@ app.get('/quote/:sym', async (req, res) => {
   const cached = priceCache[sym];
   if (cached && (Date.now() - cached.ts) < CACHE_TTL) return res.json(cached.data);
 
-  // Resolve to instrument_key (lazy, cached) before fetching
   const key = await resolveSymbol(sym);
   if (!key) {
     return res.status(404).json({ error: 'Unknown symbol (Upstox does not list it): ' + sym, unknownSymbol: true });
@@ -334,7 +332,6 @@ app.get('/quote/:sym', async (req, res) => {
 // ════════════════════════════════════════════════════════
 //  BATCH QUOTES   GET /batch?syms=RELIANCE,TCS,INFY,...
 // ════════════════════════════════════════════════════════
-
 app.get('/batch', async (req, res) => {
   if (!accessToken) return res.status(401).json({ error: 'Not authenticated', needsAuth: true });
 
@@ -346,14 +343,13 @@ app.get('/batch', async (req, res) => {
   const toFetch = [];
   const now     = Date.now();
 
-  // Make sure every symbol is resolved to an instrument_key first
   await resolveMany(syms);
 
   syms.forEach(sym => {
     const cached = priceCache[sym];
     if (cached && (now - cached.ts) < CACHE_TTL) {
       results[sym] = cached.data;
-    } else if (SYMBOL_TO_KEY[sym]) {     // only fetch resolved symbols
+    } else if (SYMBOL_TO_KEY[sym]) {
       toFetch.push(sym);
     }
   });
@@ -391,14 +387,8 @@ app.get('/batch', async (req, res) => {
 
 // ════════════════════════════════════════════════════════
 //  HISTORICAL DATA   GET /history/TCS
-//  Primary: Upstox daily candles (last 1 year)
-//  Fallback: Yahoo Finance (only if Upstox fails)
-//  Response shape is identical either way so the frontend
-//  indicators (RSI/MACD/SMA) need no changes. A `source`
-//  field tells the app which was used.
 // ════════════════════════════════════════════════════════
-
-function ymd(d) { return d.toISOString().slice(0, 10); }   // YYYY-MM-DD
+function ymd(d) { return d.toISOString().slice(0, 10); }
 
 async function historyFromUpstox(sym) {
   const key = await resolveSymbol(sym);
@@ -406,7 +396,6 @@ async function historyFromUpstox(sym) {
 
   const to   = new Date();
   const from = new Date(); from.setFullYear(from.getFullYear() - 1);
-  // V3: /historical-candle/{key}/days/1/{to}/{from}
   const url = `https://api.upstox.com/v3/historical-candle/${encodeURIComponent(key)}/days/1/${ymd(to)}/${ymd(from)}`;
 
   const resp = await axios.get(url, {
@@ -417,8 +406,6 @@ async function historyFromUpstox(sym) {
   const candles = resp.data?.data?.candles || [];
   if (!candles.length) return null;
 
-  // Upstox returns newest-first: [ts, open, high, low, close, volume, oi]
-  // Reverse to oldest-first (what indicators expect).
   const ordered = candles.slice().reverse();
   const opens   = ordered.map(c => c[1]);
   const highs   = ordered.map(c => c[2]);
@@ -451,7 +438,6 @@ async function historyFromYahoo(sym) {
 app.get('/history/:sym', async (req, res) => {
   const sym = req.params.sym.toUpperCase();
 
-  // Try Upstox first (only if authenticated)
   if (accessToken) {
     try {
       const up = await historyFromUpstox(sym);
@@ -462,7 +448,6 @@ app.get('/history/:sym', async (req, res) => {
     }
   }
 
-  // Fallback: Yahoo
   try {
     const y = await historyFromYahoo(sym);
     if (y) return res.json(y);
@@ -475,7 +460,6 @@ app.get('/history/:sym', async (req, res) => {
 // ════════════════════════════════════════════════════════
 //  ONE-TAP ORDER PLACEMENT   POST /order/place
 // ════════════════════════════════════════════════════════
-
 app.post('/order/place', async (req, res) => {
   if (!accessToken) return res.status(401).json({ error: 'Not authenticated', needsAuth: true });
 
@@ -518,7 +502,7 @@ app.post('/order/place', async (req, res) => {
     );
 
     const orderId = orderResp.data?.data?.order_id;
-    console.log(`[Order] ✅ Main order placed: ${orderId}`);
+    console.log(`[Order] Main order placed: ${orderId}`);
 
     let slOrderId = null;
     if (stopLoss && txnType === 'BUY') {
@@ -542,7 +526,7 @@ app.post('/order/place', async (req, res) => {
           { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Accept: 'application/json', 'Api-Version': '2.0' }, timeout: 10000 }
         );
         slOrderId = slResp.data?.data?.order_id;
-        console.log(`[Order] ✅ SL order placed: ${slOrderId} @ ₹${stopLoss}`);
+        console.log(`[Order] SL order placed: ${slOrderId} @ Rs.${stopLoss}`);
       } catch(slErr) {
         console.error('[Order] SL placement failed:', slErr?.response?.data || slErr.message);
       }
@@ -598,12 +582,29 @@ app.get('/funds', async (req, res) => {
   }
 });
 
+// ── DEBUG: see raw Upstox quote for one symbol (helps verify fields) ──
+app.get('/debug/quote/:sym', async (req, res) => {
+  if (!accessToken) return res.status(401).json({ error: 'Not authenticated' });
+  const sym = req.params.sym.toUpperCase();
+  const key = await resolveSymbol(sym);
+  if (!key) return res.status(404).json({ error: 'Unknown symbol: ' + sym });
+  try {
+    const resp = await axios.get('https://api.upstox.com/v2/market-quote/quotes', {
+      params:  { instrument_key: key },
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json', 'Api-Version': '2.0' },
+      timeout: 8000
+    });
+    const d = extractFromUpstoxData(resp.data?.data || {}, sym);
+    res.json({ raw: d, computed: d ? buildPrice(sym, d, Date.now()) : null });
+  } catch(e) {
+    res.status(500).json({ error: 'debug failed', details: e?.response?.data });
+  }
+});
+
 // ════════════════════════════════════════════════════════
 //  START
 // ════════════════════════════════════════════════════════
-
 app.listen(PORT, () => {
-  console.log(`Samridhi AI Server v24 running on port ${PORT}`);
-  console.log(`Endpoints: /health /auth/* /quote/:sym /batch /history/:sym /instruments/check /order/place /positions /funds`);
-  console.log(`Instrument keys resolve lazily via Upstox /v2/instruments/search after token is set.`);
+  console.log(`Samridhi AI Server v24.2 running on port ${PORT}`);
+  console.log(`Endpoints: /health /auth/* /quote/:sym /batch /history/:sym /instruments/check /order/place /positions /funds /debug/quote/:sym`);
 });
