@@ -54,10 +54,12 @@ const SEED = {
   'ETERNAL':'NSE_EQ|INE758T01015',    // Zomato (renamed Apr 2025)
   'CANBK':'NSE_EQ|INE476A01022',      // Canara Bank
   'AMBUJACEM':'NSE_EQ|INE079A01024',  // Ambuja Cements
-  'PEL':'NSE_EQ|INE140A01024',        // Piramal Enterprises
   'APLLTD':'NSE_EQ|INE901L01018',     // Alembic Pharmaceuticals
   'ARE&M':'NSE_EQ|INE885A01032',      // Amara Raja Energy & Mobility
   'LTIM':'NSE_EQ|INE214T01019'        // LTIMindtree
+  // NOTE: PEL (Piramal) intentionally NOT seeded — its ISIN changed after the
+  // 2025 restructuring, so we let the server resolve it live from Upstox's
+  // instrument search by trading symbol, which returns the current valid key.
 };
 Object.assign(SYMBOL_TO_KEY, SEED);
 Object.entries(SEED).forEach(([s,k]) => KEY_TO_SYMBOL[k] = s);
