@@ -104,6 +104,8 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 
 /* Buy this button on signal cards */
 .buy-this-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;background:var(--navy);border:none;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;margin-top:8px;}
+.place-order-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;background:linear-gradient(135deg,#059669,#10b981);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:all .2s;margin-top:8px;margin-left:6px;box-shadow:0 2px 8px rgba(16,185,129,0.3);}
+.place-order-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.45);}
 .buy-this-btn:hover{background:#0F1A2E;transform:scale(1.03);}
 
 /* Confluence badge */
@@ -342,6 +344,12 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
 .htab{padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;transition:all 0.2s;}
 .htab.on{background:rgba(70,201,138,0.08);border-color:rgba(70,201,138,0.25);color:var(--emerald);}
 .s-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);transition:.3s;border-radius:24px;}
+.switch .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%;}
+.switch input:checked + .slider{background:var(--emerald,#10b981);}
+.switch input:checked + .slider:before{transform:translateX(20px);}
 .s-row:last-child{border-bottom:none;}
 .s-inp2{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--ink);font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;outline:none;width:200px;}
 .save-btn{padding:10px 22px;border-radius:12px;background:var(--navy);border:none;color:#fff;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:16px;}
@@ -936,6 +944,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
               <button class="btn-s" onclick="if(PK.length)openDetail(PK[0].sym)">Full analysis</button>
               <button class="btn-s" onclick="openShareCard()" id="shareBtn" style="display:none;">📤 Share</button>
             </div>
+            <div id="autoScanStatus" style="font-size:11px;color:var(--muted);margin-top:8px;">Auto-scan: starting...</div>
             <!-- Phase 17A: Position sizing row -->
             <div class="hero-pos-row" id="heroPosRow" style="display:none;">
               <div class="pos-size-badge risk-ok" id="heroPosSize">
@@ -2011,6 +2020,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
       <div class="scard" style="margin-bottom:14px;">
         <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Your Name</div></div><input class="s-inp2" id="sName"></div>
         <input type="hidden" id="sGroq" value="">
+        <div class="s-row"><div><div style="font-size:13px;font-weight:500;">Auto-scan every 5 min</div><div style="font-size:10px;color:var(--muted);">Automatically scans during market hours (9:15 AM–3:30 PM)</div></div><label class="switch"><input type="checkbox" id="sAutoScan" checked onchange="toggleAutoScan(this.checked)"><span class="slider"></span></label></div>
         <button class="save-btn" onclick="saveS()">Save Settings</button>
       </div>
 
@@ -3100,6 +3110,8 @@ function dMood(bc,sc,fi) {
 
 
 async function runScan(){
+  if(window.SCANNING){ toast('Scan already running...','ok'); return; }
+  window.SCANNING = true;
   if(false){/* analysis is always built-in now */}
   SD={};SG={};PK=[];
   document.getElementById('loading').style.display='flex';
@@ -3242,7 +3254,72 @@ async function runScan(){
   document.getElementById('sm1').textContent=ST.length+' stocks';
   document.getElementById('qa4').textContent=ST.length;
   toast(PK.length+' signals ready!','ok');
+  window.SCANNING = false;
+  window.LAST_SCAN_TS = Date.now();
+  updateAutoScanStatus();
 }
+
+// ════════════════════════════════════════════════════════
+//  AUTO-SCAN — scans every 5 minutes during market hours
+// ════════════════════════════════════════════════════════
+var AUTO_SCAN_ON = true;          // user can toggle in Settings
+var AUTO_SCAN_INTERVAL = 5*60*1000; // 5 minutes
+var autoScanTimer = null;
+
+function isMarketHours(){
+  // NSE live trading: Mon-Fri, 9:15 AM - 3:30 PM IST
+  var now = new Date();
+  // Convert to IST regardless of user's timezone
+  var ist = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  var day = ist.getDay(); // 0=Sun, 6=Sat
+  if(day===0 || day===6) return false;
+  var mins = ist.getHours()*60 + ist.getMinutes();
+  return mins >= (9*60+15) && mins <= (15*60+30);
+}
+
+function updateAutoScanStatus(){
+  var el = document.getElementById('autoScanStatus');
+  if(!el) return;
+  if(!AUTO_SCAN_ON){ el.textContent='Auto-scan: OFF'; el.style.color='var(--muted)'; return; }
+  if(isMarketHours()){
+    el.textContent='Auto-scan: ON (every 5 min)';
+    el.style.color='var(--emerald)';
+  } else {
+    el.textContent='Auto-scan: ON (waiting for market hours)';
+    el.style.color='#B8922A';
+  }
+}
+
+function autoScanTick(){
+  // Only auto-scan if: feature on, market open, not already scanning,
+  // and at least 5 min since last scan.
+  if(!AUTO_SCAN_ON) return;
+  if(!isMarketHours()) { updateAutoScanStatus(); return; }
+  if(window.SCANNING) return;
+  var since = Date.now() - (window.LAST_SCAN_TS||0);
+  if(since < AUTO_SCAN_INTERVAL - 5000) return; // not time yet
+  console.log('[Auto-scan] Market open — running scheduled scan');
+  runScan();
+}
+
+function startAutoScan(){
+  if(autoScanTimer) clearInterval(autoScanTimer);
+  // Check every 30s whether it's time to scan (keeps it responsive without hammering)
+  autoScanTimer = setInterval(autoScanTick, 30*1000);
+  updateAutoScanStatus();
+  // If market is open and we have no recent scan, kick one off shortly after load
+  if(isMarketHours() && !window.LAST_SCAN_TS){
+    setTimeout(function(){ if(!window.SCANNING) runScan(); }, 3000);
+  }
+}
+
+function toggleAutoScan(on){
+  AUTO_SCAN_ON = !!on;
+  try{ sv('s_autoscan', on?'1':'0'); }catch(e){}
+  updateAutoScanStatus();
+  toast(on?'Auto-scan enabled':'Auto-scan disabled','ok');
+}
+
 
 function rAll(mood){rHero();rPicks();rMood(mood);rHWL();fP('all');rWLFull();rReports();rWLCounts();rQA();}
 
@@ -3396,7 +3473,14 @@ function launch(n,gk){
   document.getElementById('sName').value=n;
   rTags();rWLShell();
   populatePtSym();drawL(0);drawFG(50);
-  toast('Welcome '+n+'! Click Scan Markets.','ok');
+  toast('Welcome '+n+'!','ok');
+  // Load saved auto-scan preference (default ON)
+  try{
+    var savedAS = ld('s_autoscan');
+    if(savedAS==='0'){ AUTO_SCAN_ON=false; var asEl=document.getElementById('sAutoScan'); if(asEl) asEl.checked=false; }
+  }catch(e){}
+  // Start the 5-minute auto-scan scheduler (only fires during market hours)
+  if(typeof startAutoScan==='function') startAutoScan();
 }
 
 document.getElementById('launchBtn').addEventListener('click',function(){
@@ -8188,6 +8272,80 @@ function p19BuyThis(sym) {
   p19RenderPositions();
 }
 
+// ════════════════════════════════════════════════════════
+//  ONE-TAP REAL ORDER — places a live BUY on Upstox
+//  Always shows a confirmation dialog first. Real money.
+// ════════════════════════════════════════════════════════
+function placeRealOrder(sym){
+  var sig = SG[sym];
+  var dat = SD[sym];
+  if(!sig || !dat){ toast('Run a scan first','err'); return; }
+  if(sig.signal !== 'BUY'){
+    if(!confirm((NM[sym]||sym)+' is currently a '+sig.signal+', not a BUY. Are you sure you want to place a BUY order anyway?')) return;
+  }
+
+  // Suggest a quantity based on a default capital allocation, user can change
+  var price = dat.price || sig.entry || 0;
+  var suggestedQty = price>0 ? Math.max(1, Math.floor(10000/price)) : 1; // ~Rs.10k default
+
+  var qtyStr = prompt(
+    'PLACE REAL ORDER — ' + (NM[sym]||sym) + '\n\n' +
+    'This places a LIVE MARKET BUY on your Upstox account with REAL money.\n\n' +
+    'Current price: Rs.' + price.toFixed(2) + '\n' +
+    'Stop loss (auto-placed): Rs.' + sig.stopLoss + '\n\n' +
+    'Enter quantity (number of shares):',
+    String(suggestedQty)
+  );
+  if(qtyStr === null) return; // cancelled
+  var qty = parseInt(qtyStr);
+  if(!qty || qty < 1){ toast('Invalid quantity','err'); return; }
+
+  var estCost = (qty * price).toFixed(2);
+  if(!confirm(
+    'CONFIRM ORDER\n\n' +
+    'BUY ' + qty + ' shares of ' + (NM[sym]||sym) + '\n' +
+    'Approx cost: Rs.' + estCost + '\n' +
+    'Stop loss: Rs.' + sig.stopLoss + ' (auto-placed)\n\n' +
+    'This is a REAL order with REAL money. Proceed?'
+  )) return;
+
+  toast('Placing order...', 'ok');
+  fetch(P23_SERVER + '/order/place', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sym: sym,
+      qty: qty,
+      orderType: 'BUY',
+      stopLoss: sig.stopLoss,
+      tag: 'SAMRIDHI'
+    })
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, d:d}; }); })
+  .then(function(res){
+    if(res.ok && res.d.status === 'ok'){
+      var msg = '✓ Order placed! ' + qty + ' ' + (NM[sym]||sym) +
+                (res.d.orderId ? (' (ID: ' + res.d.orderId + ')') : '') +
+                (res.d.slOrderId ? ' + stop loss set' : '');
+      toast(msg, 'ok');
+      alert(msg + '\n\nCheck your Upstox app to confirm execution.');
+      // Also track it as a position
+      if(typeof p19BuyThis === 'function') p19BuyThis(sym);
+    } else if(res.status === 401 || res.d.needsAuth){
+      toast('Not logged in to Upstox — paste your token first','err');
+      alert('Your Upstox session expired. Please re-authenticate (paste a fresh token) and try again.');
+    } else {
+      var hint = res.d.hint || res.d.error || 'Unknown error';
+      toast('Order failed: ' + hint, 'err');
+      alert('Order failed.\n\nReason: ' + hint + '\n\nNothing was bought. Check your Upstox account.');
+    }
+  })
+  .catch(function(e){
+    toast('Order error: ' + e.message, 'err');
+    alert('Could not reach the order server.\n\n' + e.message + '\n\nNothing was placed.');
+  });
+}
+
 // ── 4. Render position tracker ──
 function p19RenderPositions() {
   var list = document.getElementById('posTrackerList');
@@ -8384,6 +8542,19 @@ rHero = function() {
       heroSection.parentNode.insertBefore(btn, heroSection.nextSibling);
     } else {
       existing.onclick = function() { p19BuyThis(sym); };
+    }
+    // Real one-tap order button (only meaningful for BUY signals)
+    var existingOrder = document.getElementById('heroPlaceOrderBtn');
+    if (!existingOrder) {
+      var obtn = document.createElement('button');
+      obtn.id = 'heroPlaceOrderBtn';
+      obtn.className = 'place-order-btn';
+      obtn.innerHTML = '⚡ Buy on Upstox';
+      obtn.onclick = function() { placeRealOrder(sym); };
+      var anchor = document.getElementById('heroBuyThisBtn') || heroSection;
+      anchor.parentNode.insertBefore(obtn, anchor.nextSibling);
+    } else {
+      existingOrder.onclick = function() { placeRealOrder(sym); };
     }
   }
 };
