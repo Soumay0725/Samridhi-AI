@@ -49,7 +49,15 @@ const SEED = {
   'JINDALSTEL':'NSE_EQ|INE749A01030',
   'JSWENERGY':'NSE_EQ|INE121E01018',
   'JKCEMENT':'NSE_EQ|INE823G01014',
-  'INDUSINDBK':'NSE_EQ|INE095A01012'
+  'INDUSINDBK':'NSE_EQ|INE095A01012',
+  // ── Previously-missing stocks: seeded by verified ISIN so name lookup is bypassed ──
+  'ETERNAL':'NSE_EQ|INE758T01015',    // Zomato (renamed Apr 2025)
+  'CANBK':'NSE_EQ|INE476A01022',      // Canara Bank
+  'AMBUJACEM':'NSE_EQ|INE079A01024',  // Ambuja Cements
+  'PEL':'NSE_EQ|INE140A01024',        // Piramal Enterprises
+  'APLLTD':'NSE_EQ|INE901L01018',     // Alembic Pharmaceuticals
+  'ARE&M':'NSE_EQ|INE885A01032',      // Amara Raja Energy & Mobility
+  'LTIM':'NSE_EQ|INE214T01019'        // LTIMindtree
 };
 Object.assign(SYMBOL_TO_KEY, SEED);
 Object.entries(SEED).forEach(([s,k]) => KEY_TO_SYMBOL[k] = s);
