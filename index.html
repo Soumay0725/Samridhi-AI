@@ -1783,7 +1783,7 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
     <div class="page" id="page-backtest">
       <div style="margin-bottom:18px;">
         <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);margin-bottom:3px;">Backtesting Engine</div>
-        <div style="font-size:12px;color:var(--muted);">Simulate how Samridhi's signals would have performed on historical price data</div>
+        <div style="font-size:12px;color:var(--muted);">Tests every signal Samridhi <i>would have</i> generated over the past year — computed using only the data available on each day (no peeking at the future). This is an honest measure of whether the signals actually work.</div>
       </div>
 
       <!-- Config Panel -->
@@ -1793,11 +1793,11 @@ html,body{height:100%;font-family:'Sora',-apple-system,BlinkMacSystemFont,'Segoe
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
           <div class="scr-fblock">
-            <div class="scr-flbl">Period</div>
+            <div class="scr-flbl">Holding Period (days to hold after each signal)</div>
             <div class="scr-options" id="btPeriod">
-              <button class="scr-opt" data-val="7">7 Days</button>
-              <button class="scr-opt on" data-val="14">14 Days</button>
-              <button class="scr-opt" data-val="30">30 Days</button>
+              <button class="scr-opt" data-val="5">5 Days</button>
+              <button class="scr-opt on" data-val="10">10 Days</button>
+              <button class="scr-opt" data-val="20">20 Days</button>
             </div>
           </div>
           <div class="scr-fblock">
@@ -5965,8 +5965,94 @@ function resetBacktest() {
 }
 
 // == Core backtest simulation ==
-// Uses historical closes array (30 days) already in SD[sym].closes
-// Simulates entry on day 0, exit when target or SL is hit, or at period end
+// ════════════════════════════════════════════════════════
+//  REAL WALK-FORWARD BACKTEST — no lookahead bias
+//  At each historical day, indicators are computed using ONLY
+//  data available up to that day, the signal is generated as it
+//  WOULD have been then, and the outcome is measured on the days
+//  that follow. This is the honest way to measure signal quality.
+// ════════════════════════════════════════════════════════
+
+// Compute indicators using only closes[0..endIdx] (inclusive) — no peeking ahead.
+function computeIndicatorsAt(closes, highs, lows, volumes, endIdx) {
+  // Slice strictly up to endIdx (the "present" day in the simulation)
+  var c = closes.slice(0, endIdx + 1);
+  var h = (highs && highs.length) ? highs.slice(0, endIdx + 1) : c;
+  var l = (lows && lows.length)  ? lows.slice(0, endIdx + 1)  : c;
+  var v = (volumes && volumes.length) ? volumes.slice(0, endIdx + 1) : [];
+  if (c.length < 30) return null; // need enough history for valid indicators
+  var price = c[c.length - 1];
+
+  // RSI (14, Wilder)
+  var rsi = 50;
+  if (c.length >= 15) {
+    var avgG = 0, avgL = 0;
+    for (var i = 1; i <= 14; i++) { var d0 = c[i] - c[i-1]; if (d0 > 0) avgG += d0; else avgL += Math.abs(d0); }
+    avgG /= 14; avgL /= 14;
+    for (var i = 15; i < c.length; i++) {
+      var d0 = c[i] - c[i-1];
+      avgG = (avgG*13 + (d0>0?d0:0))/14;
+      avgL = (avgL*13 + (d0<0?Math.abs(d0):0))/14;
+    }
+    rsi = avgL === 0 ? 100 : parseFloat((100 - (100/(1+(avgG/avgL)))).toFixed(1));
+  }
+
+  // SMA 20/50/200
+  var sma20 = price, sma50 = price, sma200 = price;
+  if (c.length >= 20)  sma20  = c.slice(-20).reduce(function(a,b){return a+b;},0)/20;
+  if (c.length >= 50)  sma50  = c.slice(-50).reduce(function(a,b){return a+b;},0)/50;
+  if (c.length >= 200) sma200 = c.slice(-200).reduce(function(a,b){return a+b;},0)/200;
+
+  // MACD (12/26 EMA)
+  function ema(arr, p) {
+    if (arr.length < p) return arr[arr.length-1] || 0;
+    var k = 2/(p+1), e = arr.slice(0,p).reduce(function(a,b){return a+b;},0)/p;
+    for (var i = p; i < arr.length; i++) e = arr[i]*k + e*(1-k);
+    return e;
+  }
+  var macdBull = c.length >= 26 ? (ema(c,12) > ema(c.slice(0,-1).concat(c[c.length-1]),26) ? true : (ema(c,12)-ema(c,26) > 0)) : (sma20 > sma50);
+  // simpler robust MACD: line vs its own 9-EMA signal
+  if (c.length >= 35) {
+    var macdSeries = [];
+    for (var i = 26; i <= c.length; i++) macdSeries.push(ema(c.slice(0,i),12) - ema(c.slice(0,i),26));
+    var sigLine = macdSeries.length >= 9 ? ema(macdSeries, 9) : macdSeries[macdSeries.length-1];
+    macdBull = macdSeries[macdSeries.length-1] > sigLine;
+  }
+
+  // Volume ratio
+  var volR = 0.9;
+  if (v.length >= 21) {
+    var today = v[v.length-1];
+    var avg20 = v.slice(-21,-1).reduce(function(a,b){return a+b;},0)/20;
+    if (avg20 > 0) volR = parseFloat((today/avg20).toFixed(2));
+  }
+  volR = Math.max(0.1, Math.min(5, volR));
+
+  // ATR (14)
+  var atr = price * 0.012;
+  if (h.length >= 15) {
+    var trs = [];
+    for (var i = 1; i < c.length; i++) {
+      var pc = c[i-1];
+      trs.push(Math.max(h[i]-l[i], Math.abs(h[i]-pc), Math.abs(l[i]-pc)));
+    }
+    if (trs.length >= 14) {
+      var a = trs.slice(0,14).reduce(function(x,y){return x+y;},0)/14;
+      for (var j = 14; j < trs.length; j++) a = (a*13 + trs[j])/14;
+      atr = parseFloat(a.toFixed(2));
+    }
+  }
+
+  // chg% vs previous day
+  var chg = c.length >= 2 ? parseFloat((((price - c[c.length-2]) / c[c.length-2]) * 100).toFixed(2)) : 0;
+
+  return {
+    price: price, rsi: rsi, sma50: parseFloat(sma50.toFixed(2)), sma200: parseFloat(sma200.toFixed(2)),
+    macd: { bull: macdBull }, volR: volR, atr: atr, chg: chg, closes: c
+  };
+}
+
+// Legacy single-window simulator (kept for compatibility, no longer primary)
 function simulateTrade(sym, sig, closes, period, exitMode, capital) {
   if (!closes || closes.length < 2) return null;
   var entry = sig.entry;
@@ -6036,77 +6122,120 @@ function simulateTrade(sym, sig, closes, period, exitMode, capital) {
 }
 
 async function runBacktest() {
-  if (!Object.keys(SD).length || !Object.keys(SG).length) {
-    toast('Run a market scan first to populate data', 'err');
+  if (!Object.keys(SD).length) {
+    toast('Run a market scan first to load price history', 'err');
     return;
   }
 
   var btn = document.getElementById('btRunBtn');
-  btn.textContent = ' Running...';
+  btn.textContent = ' Running real backtest...';
   btn.disabled = true;
 
-  setTimeout(function() {
-    btn.textContent = ' Run Backtest';
-    btn.disabled = false;
+  // Let the UI update before the heavy loop
+  await new Promise(function(r){ setTimeout(r, 50); });
 
-    var period   = parseInt(btGetVal('btPeriod')) || 14;
-    var sigType  = btGetVal('btSigType') || 'ALL';
-    var minConf  = parseInt(btGetVal('btMinConf')) || 0;
-    var capital  = parseInt(btGetVal('btCapital')) || 10000;
-    var exitMode = btGetVal('btExit') || 'tgsl';
-    var stocks   = btGetVal('btStocks') || 'ALL';
+  var holdDays = parseInt(btGetVal('btPeriod')) || 10;   // how many days to hold after a signal
+  var sigType  = btGetVal('btSigType') || 'ALL';
+  var minConf  = parseInt(btGetVal('btMinConf')) || 0;
+  var capital  = parseInt(btGetVal('btCapital')) || 10000;
+  var exitMode = btGetVal('btExit') || 'tgsl';
+  var stocks   = btGetVal('btStocks') || 'ALL';
 
-    // Pick stocks to backtest
-    var symbols = ST.slice();
-    if (stocks === 'TOP10') {
-      symbols = Object.keys(SG)
-        .filter(function(s) { return SG[s]; })
-        .sort(function(a, b) { return (SG[b].confidence || 0) - (SG[a].confidence || 0); })
-        .slice(0, 10);
+  var symbols = ST.slice();
+  if (stocks === 'TOP10') {
+    symbols = Object.keys(SG).filter(function(s){return SG[s];})
+      .sort(function(a,b){ return (SG[b].confidence||0)-(SG[a].confidence||0); })
+      .slice(0,10);
+  }
+
+  var trades = [];
+  var WARMUP = 200;       // need 200 days before first signal (for SMA200)
+  var STEP = 1;           // evaluate every trading day
+
+  symbols.forEach(function(sym) {
+    var d = SD[sym];
+    if (!d || !d.closes || d.closes.length < WARMUP + holdDays + 5) return;
+    var closes = d.closes, highs = d.highs||closes, lows = d.lows||closes, vols = d.volumes||[];
+
+    // Walk forward through history. At each day, compute the signal using ONLY
+    // past data, then measure what happened over the next `holdDays`.
+    for (var day = WARMUP; day < closes.length - holdDays - 1; day += STEP) {
+      var ind = computeIndicatorsAt(closes, highs, lows, vols, day);
+      if (!ind) continue;
+      var scored = calcScore(ind);   // SAME scoring engine as live signals
+      if (scored.signal === 'HOLD') continue;
+      if (sigType !== 'ALL' && scored.signal !== sigType) continue;
+      if (scored.confidence < minConf) continue;
+
+      // Simulate forward from the day AFTER the signal
+      var isBuy = scored.signal === 'BUY';
+      var entryPrice = closes[day];   // enter at signal-day close
+      var target = scored.target, sl = scored.stopLoss;
+      var exitPrice = closes[day + holdDays], exitDay = holdDays, result = 'OPEN';
+
+      for (var k = 1; k <= holdDays; k++) {
+        var fp = closes[day + k];
+        if (exitMode === 'tgsl') {
+          if (isBuy) {
+            if (fp >= target) { exitPrice = target; exitDay = k; result = 'WIN'; break; }
+            if (fp <= sl)     { exitPrice = sl;     exitDay = k; result = 'LOSS'; break; }
+          } else {
+            if (fp <= target) { exitPrice = target; exitDay = k; result = 'WIN'; break; }
+            if (fp >= sl)     { exitPrice = sl;     exitDay = k; result = 'LOSS'; break; }
+          }
+        }
+      }
+      if (result === 'OPEN') {
+        exitPrice = closes[day + holdDays];
+        if (isBuy)  result = exitPrice >= entryPrice ? 'WIN' : 'LOSS';
+        else        result = exitPrice <= entryPrice ? 'WIN' : 'LOSS';
+      }
+
+      var qty = Math.floor(capital / entryPrice) || 1;
+      var pnl = isBuy ? (exitPrice - entryPrice) * qty : (entryPrice - exitPrice) * qty;
+      var retPct = isBuy ? ((exitPrice-entryPrice)/entryPrice*100) : ((entryPrice-exitPrice)/entryPrice*100);
+
+      trades.push({
+        sym: sym, name: NM[sym]||sym, sector: SEC[sym]||'--',
+        signal: scored.signal, confidence: scored.confidence,
+        entry: parseFloat(entryPrice.toFixed(2)), target: target, sl: sl,
+        exitPrice: parseFloat(exitPrice.toFixed(2)), exitDay: exitDay, qty: qty,
+        pnl: parseFloat(pnl.toFixed(2)), retPct: parseFloat(retPct.toFixed(2)),
+        result: result, capital: capital,
+        dayIndex: day
+      });
     }
+  });
 
-    var trades = [];
-    symbols.forEach(function(sym) {
-      var d  = SD[sym];
-      var sg = SG[sym];
-      if (!d || !sg) return;
-      if (sigType !== 'ALL' && sg.signal !== sigType) return;
-      if (sg.confidence < minConf) return;
+  btn.textContent = '▶ Run Backtest';
+  btn.disabled = false;
 
-      var trade = simulateTrade(sym, sg, d.closes, period, exitMode, capital);
-      if (trade) trades.push(trade);
-    });
+  BT_ALL_TRADES = trades;
+  BT_TRADES = trades;
 
-    BT_ALL_TRADES = trades;
-    BT_TRADES = trades;
+  if (!trades.length) {
+    toast('No historical signals found with these filters. Try lowering min confidence or widening signal type.', 'err');
+    return;
+  }
 
-    if (!trades.length) {
-      toast('No trades to backtest with current filters', 'err');
-      return;
-    }
+  var wins = trades.filter(function(t){return t.result==='WIN';}).length;
+  var badge = document.getElementById('btNavBadge');
+  if (badge) { badge.textContent = Math.round(wins/trades.length*100)+'%'; badge.style.display = 'inline'; }
 
-    // Update badge
-    var wins = trades.filter(function(t) { return t.result === 'WIN'; }).length;
-    var badge = document.getElementById('btNavBadge');
-    if (badge) {
-      badge.textContent = wins + 'W';
-      badge.style.display = 'inline';
-    }
+  document.getElementById('btEmpty').style.display = 'none';
+  document.getElementById('btResultsWrap').style.display = 'block';
+  document.getElementById('btCurveMeta').textContent = holdDays + '-day hold  ' + trades.length + ' historical signals  (walk-forward, no lookahead)';
 
-    document.getElementById('btEmpty').style.display = 'none';
-    document.getElementById('btResultsWrap').style.display = 'block';
-    document.getElementById('btCurveMeta').textContent = period + '-day simulation  ' + trades.length + ' trades';
+  renderBtKPIs(trades, capital);
+  renderBtEquity(trades, capital);
+  renderBtTable(trades);
+  renderBtSectorWR(trades);
+  renderBtSigAccuracy(trades);
+  renderBtBestWorst(trades);
 
-    renderBtKPIs(trades, capital);
-    renderBtEquity(trades, capital);
-    renderBtTable(trades);
-    renderBtSectorWR(trades);
-    renderBtSigAccuracy(trades);
-    renderBtBestWorst(trades);
-
-    toast('Backtest complete -- ' + trades.length + ' trades simulated', 'ok');
-  }, 400);
+  toast('Real backtest complete — ' + trades.length + ' historical signals tested', 'ok');
 }
+
 
 function renderBtKPIs(trades, capital) {
   var wins   = trades.filter(function(t) { return t.result === 'WIN'; });
